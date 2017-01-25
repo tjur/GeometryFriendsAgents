@@ -75,8 +75,6 @@ namespace GeometryFriendsAgents
 
             //send a message to the rectangle informing that the circle setup is complete and show how to pass an attachment: a pen object
             messages.Add(new AgentMessage("Setup complete, testing to send an object as an attachment.", new Pen(Color.BlanchedAlmond)));
-
-            //DebugSensorsInfo();
         }
 
         //implements abstract rectangle interface: registers updates from the agent's sensors that it is up to date with the latest environment information
@@ -104,14 +102,6 @@ namespace GeometryFriendsAgents
         //simple algorithm for choosing a random action for the rectangle agent
         private void RandomAction()
         {
-            /*
-             Rectangle Actions
-             MOVE_LEFT = 5
-             MOVE_RIGHT = 6
-             MORPH_UP = 7
-             MORPH_DOWN = 8
-            */
-
             currentAction = possibleMoves[rnd.Next(possibleMoves.Count)];
 
             //send a message to the circle agent telling what action it chose
@@ -127,50 +117,7 @@ namespace GeometryFriendsAgents
         //implements abstract rectangle interface: updates the agent state logic and predictions
         public override void Update(TimeSpan elapsedGameTime)
         {
-            if (lastMoveTime == 60)
-                lastMoveTime = 0;
-
-            if ((lastMoveTime) <= (DateTime.Now.Second) && (lastMoveTime < 60))
-            {
-                if (!(DateTime.Now.Second == 59))
-                {
-                    RandomAction();
-                    lastMoveTime = lastMoveTime + 1;
-                    //DebugSensorsInfo();
-                }
-                else
-                    lastMoveTime = 60;
-            }
-        }
-
-        //typically used console debugging used in previous implementations of GeometryFriends
-        protected void DebugSensorsInfo()
-        {
-            Log.LogInformation("Rectangle Aagent - " + numbersInfo.ToString());
-
-            Log.LogInformation("Rectangle Aagent - " + rectangleInfo.ToString());
-
-            Log.LogInformation("Rectangle Aagent - " + circleInfo.ToString());
-
-            foreach (ObstacleRepresentation i in obstaclesInfo)
-            {
-                Log.LogInformation("Rectangle Aagent - " + i.ToString("Obstacle"));
-            }
-
-            foreach (ObstacleRepresentation i in rectanglePlatformsInfo)
-            {
-                Log.LogInformation("Rectangle Aagent - " + i.ToString("Rectangle Platform"));
-            }
-
-            foreach (ObstacleRepresentation i in circlePlatformsInfo)
-            {
-                Log.LogInformation("Rectangle Aagent - " + i.ToString("Circle Platform"));
-            }
-
-            foreach (CollectibleRepresentation i in collectiblesInfo)
-            {
-                Log.LogInformation("Rectangle Aagent - " + i.ToString());
-            }
+            
         }
 
         //implements abstract rectangle interface: signals the agent the end of the current level
