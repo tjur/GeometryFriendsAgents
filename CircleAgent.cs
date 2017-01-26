@@ -8,6 +8,7 @@ using GeometryFriends.AI.Perceptions.Information;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 
 namespace GeometryFriendsAgents
 {
@@ -18,7 +19,7 @@ namespace GeometryFriendsAgents
     {
         //agent implementation specificiation
         private bool implementedAgent;
-        private string agentName = "RandPredictorCircle";
+        private string agentName = "MCTSCircle";
 
         //auxiliary variables for agent action
         private Moves currentAction;
@@ -53,6 +54,10 @@ namespace GeometryFriendsAgents
         //Area of the game screen
         private Rectangle area;
 
+        private MCTSTree MCTSTree;
+        private double CP = 1 / Math.Sqrt(2);
+        private const float SECONDS_OF_SIMULATION = 35;
+
         public CircleAgent()
         {
             //Change flag if agent is not to be used
@@ -67,7 +72,8 @@ namespace GeometryFriendsAgents
             possibleMoves = new List<Moves>();
             possibleMoves.Add(Moves.ROLL_LEFT);
             possibleMoves.Add(Moves.ROLL_RIGHT);
-            possibleMoves.Add(Moves.JUMP);                
+            possibleMoves.Add(Moves.JUMP);
+            possibleMoves.Add(Moves.NO_ACTION);         
       
             //history keeping
             uncaughtCollectibles = new List<CollectibleRepresentation>();
@@ -149,7 +155,20 @@ namespace GeometryFriendsAgents
         //implements abstract circle interface: updates the agent state logic and predictions
         public override void Update(TimeSpan elapsedGameTime)
         {
-            
+            //Every second one new action is choosen
+            if (lastMoveTime == 60)
+                lastMoveTime = 0;
+
+            if ((lastMoveTime) <= (DateTime.Now.Second) && (lastMoveTime < 60))
+            {
+                if (!(DateTime.Now.Second == 59))
+                {
+                    currentAction = UCTSearch(predictor);
+                    lastMoveTime = lastMoveTime + 1;
+                }
+                else
+                    lastMoveTime = 60;
+            }
         }
 
         //implements abstract circle interface: signals the agent the end of the current level
@@ -187,6 +206,91 @@ namespace GeometryFriendsAgents
                     }
                 }
             }
+        }
+
+
+        // prawdopodobnie trzeba będzie te funkcje wrzucić do osobnej klasy (na razie są tutaj,
+        // bo jeszcze nie wiem co nam będzie potrzebne z tego CircleAgenta :D)
+
+        private MCTSTreeNode Expand(MCTSTreeNode node)
+        {
+            List<Moves> notUsedActions = possibleMoves.Except(node.Children.Select(c => c.Move)).ToList();
+            Moves newMove = notUsedActions[rnd.Next(notUsedActions.Count)];
+            
+            return node.AddNewMove(newMove);
+        }
+
+        private void BackUp(MCTSTreeNode node, double value)
+        {
+            node.Backpropagation(value);
+        }
+
+        private MCTSTreeNode BestChild(MCTSTreeNode node, double c)
+        {
+            double maxValue = -1;
+            MCTSTreeNode bestNode = null;
+
+            foreach (MCTSTreeNode child in node.Children)
+            {
+                double value = child.Value / child.Simulations + c * Math.Sqrt(2 * Math.Log(node.Simulations) / child.Simulations);
+
+                if (value > maxValue)
+                {
+                    maxValue = value;
+                    bestNode = child;
+                }
+            }
+
+            return bestNode;
+        }
+
+        private MCTSTreeNode TreePolicy(ActionSimulator simulator, MCTSTreeNode node)
+        {
+            while (true) // todo: może nie warto schodzić zbyt głęboko
+            {
+                if (node.Children.Count < possibleMoves.Count)
+                    return Expand(node);
+                else
+                {
+                    node = BestChild(node, CP);
+                    simulator.AddInstruction(node.Move, 1);
+                }
+            }
+        }
+
+        private double DefaultPolicy(ActionSimulator simulator, MCTSTreeNode node)
+        {
+            List<CollectibleRepresentation> caughtCollectibles = new List<CollectibleRepresentation>();
+
+            simulator.AddInstruction(node.Move, 1);
+
+            for (int i = 0; i < SECONDS_OF_SIMULATION; i++)
+                simulator.AddInstruction(possibleMoves[rnd.Next(possibleMoves.Count)], 1);
+
+            simulator.SimulatorCollectedEvent += (Object sender, CollectibleRepresentation collectibleCaught) => { caughtCollectibles.Add(collectibleCaught); };
+            simulator.Update(SECONDS_OF_SIMULATION);
+
+            // todo: uwzględnić jeszcze odległość do najbliższego niezebranego
+            return caughtCollectibles.Count;
+        }
+
+        public Moves UCTSearch(ActionSimulator simulator)
+        {
+            MCTSTreeNode root = new MCTSTreeNode(Moves.NO_ACTION, null);
+            DateTime start = DateTime.Now;
+
+            while ((DateTime.Now - start).Seconds < 1)
+            {
+                MCTSTreeNode node = TreePolicy(simulator, root);
+                double value = DefaultPolicy(simulator, node);
+                BackUp(node, value);
+            }
+
+            MCTSTreeNode bestNode = BestChild(root, 0);
+
+            Log.LogInformation("Root simulations: " + root.Simulations + ", value: " + root.Value);
+            Log.LogInformation("Best node simulations: " + bestNode.Simulations + ", value: " + bestNode.Value);
+            return bestNode.Move;
         }
     }
 }
