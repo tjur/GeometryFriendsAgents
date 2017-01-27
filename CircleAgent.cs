@@ -7,6 +7,7 @@ using GeometryFriends.AI.Interfaces;
 using GeometryFriends.AI.Perceptions.Information;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 
 namespace GeometryFriendsAgents
@@ -45,6 +46,11 @@ namespace GeometryFriendsAgents
         private ObstacleRepresentation[] rectanglePlatformsInfo;
         private ObstacleRepresentation[] circlePlatformsInfo;
         private CollectibleRepresentation[] collectiblesInfo;
+        private int[,] map;
+
+        private int N, M;
+
+        private bool heura_is_init = false;
 
         private int nCollectiblesLeft;
 
@@ -52,6 +58,169 @@ namespace GeometryFriendsAgents
 
         //Area of the game screen
         private Rectangle area;
+
+        const int max_size = 10000;
+
+        int c2to1(int x,int y)
+        {
+            return max_size * x + y;
+        }
+
+
+        int f1to2(int x)
+        {
+            return x / max_size;
+        }
+
+        int s1to2(int x)
+        {
+            return x % max_size;
+        }
+
+        void bfs_heura_init()
+        {
+            float Sx = area.Width;
+            float Sy = area.Height;
+
+            N = (int)(area.Width - 40) / 10;
+
+            M = (int)(area.Height - 40) / 10;
+
+            map = new int[N, M]; // 0 - empty , 1- only circle can move , 2 - only rectangle can move, 3 nobody can move
+
+            for (int i = 0; i < N;  i++)
+                for (int j = 0; j < M; j++)
+                    map[i, j] = 0;
+
+
+            for (int i = 0; i < N; i++)
+                for (int j = 0; j < M; j++)
+                {
+
+                    Rectangle xij = new Rectangle(10 * i + 40, 10 * j + 40, 10, 10);
+                    foreach (ObstacleRepresentation x in rectanglePlatformsInfo)
+                    {
+                        Rectangle recx = new Rectangle((int)x.X - (int)x.Width / 2 - 40, (int)x.Y - (int)x.Height / 2 - 40, (int)x.Width, (int)x.Height);
+                        if (!Rectangle.Intersect(xij, recx).IsEmpty)
+                            map[i, j] = 2;
+                    }
+
+                    foreach (ObstacleRepresentation x in circlePlatformsInfo)
+                    {
+                        Rectangle recx = new Rectangle((int)x.X - (int)x.Width / 2 - 40, (int)x.Y - (int)x.Height / 2 - 40, (int)x.Width, (int)x.Height);
+                        if (!Rectangle.Intersect(xij, recx).IsEmpty)
+                            map[i, j] = 1;
+                    }
+
+                    foreach (ObstacleRepresentation x in obstaclesInfo)
+                    {
+                        Rectangle recx = new Rectangle((int)x.X - (int)x.Width / 2 - 40, (int)x.Y - (int)x.Height / 2 - 40, (int)x.Width, (int)x.Height);
+                        if (!Rectangle.Intersect(xij, recx).IsEmpty)
+                            map[i, j] = 3;
+
+                        //  Debug.WriteLine(recx.ToString() + area.ToString());
+
+                    }
+
+                }
+            for (int i = 0; i < M; i++)
+            {
+                string str = "";
+                for (int j = 0; j < N; j++)
+                {
+                    str += map[j, i].ToString();
+
+
+                }
+
+                Debug.WriteLine(str);
+            }
+
+            Debug.WriteLine("______________________________________");
+
+        }
+
+        float bfs_heura(float x1, float y1, float x2, float y2, bool iscircle)
+        {
+
+            if (heura_is_init == false)
+            {
+                bfs_heura_init();
+                heura_is_init = true;
+            }
+
+            int i1 = (int)(x1 - 40) / 10;
+            int j1 = (int)(y1 - 40) / 10;
+            int i2 = (int)(x2 - 40) / 10;
+            int j2 = (int)(y2 - 40) / 10;
+
+
+
+            Queue<int> q=new Queue<int>();
+
+            int[,] dist = new int[N, M]; 
+
+            for (int i = 0; i < N; i++)
+                for (int j = 0; j < M; j++)
+                    dist[i, j] = 0;
+
+
+            Debug.WriteLine(i1);
+
+            Debug.WriteLine(j1);
+
+
+            Debug.WriteLine(i2);
+
+            Debug.WriteLine(j2);
+
+            Debug.WriteLine(".................");
+            
+            q.Enqueue(c2to1(i1, j1));
+            dist[i1, j1] = 1;
+            while(q.Count!=0)
+            {
+                int z = q.Dequeue();
+                int x = f1to2(z);
+                int y = s1to2(z);
+                int d = dist[x, y];
+                for (int i=-1;i<=1;i++)
+                    for (int j=-1;j<=1;j++)
+                        if (Math.Abs(i)+ Math.Abs(j)==1)
+                        if (i+x>=0&&i+x<N&&j+y>=0&&j+y<M)
+                         if(map[i+x,j+y]==0||(iscircle==true&& map[i + x, j + y] == 1)|| (iscircle == false && map[i + x, j + y] == 2) )
+                                    if(dist[i + x, j + y]==0)
+                                {
+
+                                        if (i + x == i2 && j + y == j2)
+                                            return d;
+
+
+                                        dist[i + x, j + y] = d + 1;
+                                    q.Enqueue(c2to1(i+x, j+y));
+
+
+                         }
+
+
+            }
+
+            for (int i = 0; i < M; i++)
+            {
+                string str = "";
+                for (int j = 0; j < N; j++)
+                {
+                    str += dist[j, i].ToString();
+
+
+                }
+
+                Debug.WriteLine(str);
+            }
+
+            return -1;
+        }
+
 
         public CircleAgent()
         {
@@ -67,8 +236,8 @@ namespace GeometryFriendsAgents
             possibleMoves = new List<Moves>();
             possibleMoves.Add(Moves.ROLL_LEFT);
             possibleMoves.Add(Moves.ROLL_RIGHT);
-            possibleMoves.Add(Moves.JUMP);                
-      
+            possibleMoves.Add(Moves.JUMP);
+
             //history keeping
             uncaughtCollectibles = new List<CollectibleRepresentation>();
             caughtCollectibles = new List<CollectibleRepresentation>();
@@ -134,8 +303,9 @@ namespace GeometryFriendsAgents
         //simple algorithm for choosing a random action for the circle agent
         private void RandomAction()
         {
+
             currentAction = possibleMoves[rnd.Next(possibleMoves.Count)];
-            
+
             //send a message to the rectangle agent telling what action it chose
             messages.Add(new AgentMessage("Going to :" + currentAction));
         }
@@ -149,7 +319,8 @@ namespace GeometryFriendsAgents
         //implements abstract circle interface: updates the agent state logic and predictions
         public override void Update(TimeSpan elapsedGameTime)
         {
-            
+
+            Debug.WriteLine(bfs_heura(50, 50, 50, 200, true));
         }
 
         //implements abstract circle interface: signals the agent the end of the current level
