@@ -18,12 +18,13 @@ namespace GeometryFriendsAgents
 
     class MCTSTreeNode
     {
-        Moves Move { get; }
-        double Value { get; set; }
-        int Simulations { get; set; }
+        public Moves Move { get; }
+        public double Value { get; set; }
+        public int Simulations { get; set; }
 
-        MCTSTreeNode Parent { get; }
-        List<MCTSTreeNode> Children { get; }
+        public MCTSTreeNode Parent { get; }
+
+        public List<MCTSTreeNode> Children { get; }
 
         public MCTSTreeNode(Moves Move, MCTSTreeNode Parent)
         {
@@ -45,10 +46,12 @@ namespace GeometryFriendsAgents
             return Children.Count == 0;
         }
 
-        public void AddNewMove(Moves Move)
+        public MCTSTreeNode AddNewMove(Moves Move)
         {
             MCTSTreeNode child = new MCTSTreeNode(Move, this);
             Children.Add(child);
+
+            return child;
         }
 
         public MCTSTreeNode MakeMove(Moves Move)
