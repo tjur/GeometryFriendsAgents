@@ -52,6 +52,7 @@ namespace GeometryFriendsAgents
         private int N, M;
 
         private bool heura_is_init = false;
+        private int size_of_box = 5;
 
         private int nCollectiblesLeft;
 
@@ -59,10 +60,11 @@ namespace GeometryFriendsAgents
 
         //Area of the game screen
         private Rectangle area;
-        
+
         const int max_size = 10000;
 
-        int c2to1(int x,int y)
+        //skromne funkcje aby uniknac krotek
+        int c2to1(int x, int y)
         {
             return max_size * x + y;
         }
@@ -83,13 +85,13 @@ namespace GeometryFriendsAgents
             float Sx = area.Width;
             float Sy = area.Height;
 
-            N = (int)(area.Width - 40) / 10;
+            N = (int)(area.Width - area.X) / size_of_box + 1;
 
-            M = (int)(area.Height - 40) / 10;
+            M = (int)(area.Height - area.Y) / size_of_box + 1;
 
             map = new int[N, M]; // 0 - empty , 1- only circle can move , 2 - only rectangle can move, 3 nobody can move
 
-            for (int i = 0; i < N;  i++)
+            for (int i = 0; i < N; i++)
                 for (int j = 0; j < M; j++)
                     map[i, j] = 0;
 
@@ -98,32 +100,36 @@ namespace GeometryFriendsAgents
                 for (int j = 0; j < M; j++)
                 {
 
-                    Rectangle xij = new Rectangle(10 * i + 40, 10 * j + 40, 10, 10);
+                    Rectangle xij = new Rectangle(size_of_box * i + area.X, size_of_box * j + area.Y, size_of_box, size_of_box);
                     foreach (ObstacleRepresentation x in rectanglePlatformsInfo)
                     {
-                        Rectangle recx = new Rectangle((int)x.X - (int)x.Width / 2 - 40, (int)x.Y - (int)x.Height / 2 - 40, (int)x.Width, (int)x.Height);
+                        Rectangle recx = new Rectangle((int)x.X - (int)x.Width / 2 - area.X, (int)x.Y - (int)x.Height / 2 - area.Y, (int)x.Width, (int)x.Height);
                         if (!Rectangle.Intersect(xij, recx).IsEmpty)
                             map[i, j] = 2;
                     }
 
                     foreach (ObstacleRepresentation x in circlePlatformsInfo)
                     {
-                        Rectangle recx = new Rectangle((int)x.X - (int)x.Width / 2 - 40, (int)x.Y - (int)x.Height / 2 - 40, (int)x.Width, (int)x.Height);
+                        Rectangle recx = new Rectangle((int)x.X - (int)x.Width / 2 - area.X, (int)x.Y - (int)x.Height / 2 - area.Y, (int)x.Width, (int)x.Height);
                         if (!Rectangle.Intersect(xij, recx).IsEmpty)
                             map[i, j] = 1;
                     }
 
                     foreach (ObstacleRepresentation x in obstaclesInfo)
                     {
-                        Rectangle recx = new Rectangle((int)x.X - (int)x.Width / 2 - 40, (int)x.Y - (int)x.Height / 2 - 40, (int)x.Width, (int)x.Height);
+                        Rectangle recx = new Rectangle((int)x.X - (int)x.Width / 2 - area.X, (int)x.Y - (int)x.Height / 2 - area.Y, (int)x.Width, (int)x.Height);
                         if (!Rectangle.Intersect(xij, recx).IsEmpty)
                             map[i, j] = 3;
 
-                        //  Debug.WriteLine(recx.ToString() + area.ToString());
 
                     }
 
                 }
+
+        }
+
+        void debug_draw_map()
+        {
             for (int i = 0; i < M; i++)
             {
                 string str = "";
@@ -141,6 +147,7 @@ namespace GeometryFriendsAgents
 
         }
 
+
         float bfs_heura(float x1, float y1, float x2, float y2, bool iscircle)
         {
 
@@ -150,52 +157,52 @@ namespace GeometryFriendsAgents
                 heura_is_init = true;
             }
 
-            int i1 = (int)(x1 - 40) / 10;
-            int j1 = (int)(y1 - 40) / 10;
-            int i2 = (int)(x2 - 40) / 10;
-            int j2 = (int)(y2 - 40) / 10;
+            int i1 = (int)(x1 - area.X) / size_of_box;
+            int j1 = (int)(y1 - area.Y) / size_of_box;
+            int i2 = (int)(x2 - area.X) / size_of_box;
+            int j2 = (int)(y2 - area.Y) / size_of_box;
 
+            Queue<int> q = new Queue<int>();
 
-
-            Queue<int> q=new Queue<int>();
-
-            int[,] dist = new int[N, M]; 
+            int[,] dist = new int[N, M];
 
             for (int i = 0; i < N; i++)
                 for (int j = 0; j < M; j++)
                     dist[i, j] = 0;
-  
+
             q.Enqueue(c2to1(i1, j1));
             dist[i1, j1] = 1;
-            while(q.Count!=0)
+            while (q.Count != 0)
             {
                 int z = q.Dequeue();
                 int x = f1to2(z);
                 int y = s1to2(z);
                 int d = dist[x, y];
-                for (int i=-1;i<=1;i++)
-                    for (int j=-1;j<=1;j++)
-                        if (Math.Abs(i)+ Math.Abs(j)==1)
-                        if (i+x>=0&&i+x<N&&j+y>=0&&j+y<M)
-                         if(map[i+x,j+y]==0||(iscircle==true&& map[i + x, j + y] == 1)|| (iscircle == false && map[i + x, j + y] == 2) )
-                                    if(dist[i + x, j + y]==0)
-                                {
+                for (int i = -1; i <= 1; i++)
+                    for (int j = -1; j <= 1; j++)
+                        if (Math.Abs(i) + Math.Abs(j) == 1)
+                            if (i + x >= 0 && i + x < N && j + y >= 0 && j + y < M)
+                                if (map[i + x, j + y] == 0 || (iscircle == true && map[i + x, j + y] == 1) || (iscircle == false && map[i + x, j + y] == 2))
+                                    if (dist[i + x, j + y] == 0)
+                                    {
 
                                         if (i + x == i2 && j + y == j2)
                                             return d;
 
 
                                         dist[i + x, j + y] = d + 1;
-                                    q.Enqueue(c2to1(i+x, j+y));
+                                        q.Enqueue(c2to1(i + x, j + y));
 
 
-                         }
+                                    }
 
 
             }
-            
 
-            return -1;
+
+
+            //brak sciezki
+            return max_size * 2;
         }
 
         private MCTSTree MCTSTree;
@@ -218,8 +225,8 @@ namespace GeometryFriendsAgents
             possibleMoves.Add(Moves.ROLL_RIGHT);
             possibleMoves.Add(Moves.JUMP);
 
-            possibleMoves.Add(Moves.NO_ACTION);         
-      
+            possibleMoves.Add(Moves.NO_ACTION);
+
             //history keeping
             uncaughtCollectibles = new List<CollectibleRepresentation>();
             caughtCollectibles = new List<CollectibleRepresentation>();
@@ -302,8 +309,6 @@ namespace GeometryFriendsAgents
         public override void Update(TimeSpan elapsedGameTime)
         {
 
-            Debug.WriteLine(bfs_heura(50, 50, 50, 200, true));
-
             //Every second one new action is choosen
             if (lastMoveTime == 60)
                 lastMoveTime = 0;
@@ -365,7 +370,7 @@ namespace GeometryFriendsAgents
         {
             List<Moves> notUsedActions = possibleMoves.Except(node.Children.Select(c => c.Move)).ToList();
             Moves newMove = notUsedActions[rnd.Next(notUsedActions.Count)];
-            
+
             return node.AddNewMove(newMove);
         }
 
@@ -419,8 +424,29 @@ namespace GeometryFriendsAgents
             simulator.SimulatorCollectedEvent += (Object sender, CollectibleRepresentation collectibleCaught) => { caughtCollectibles.Add(collectibleCaught); };
             simulator.Update(SECONDS_OF_SIMULATION);
 
+
+            float min_d = area.Width * area.Height;
             // todo: uwzględnić jeszcze odległość do najbliższego niezebranego
-            return caughtCollectibles.Count;
+            foreach (CollectibleRepresentation item in simulator.CollectiblesUncaught)
+            {
+                float d = bfs_heura(simulator.CirclePositionX, simulator.CirclePositionY, item.X, item.Y, true);
+                if (d < min_d)
+                    min_d = d;
+
+            }
+
+            //f(x)= 1/e^(x/CONST)^2    
+            double CONST = 20;
+            double f = 1 / Math.Exp((min_d / CONST) * (min_d / CONST));
+
+            //g(x)=max(x/CONST2+1,0)
+            double CONST2 = 600;
+            double g = Math.Max(-min_d / CONST2 + 1, 0);
+
+
+
+
+            return caughtCollectibles.Count + g;
         }
 
         public Moves UCTSearch(ActionSimulator simulator)
