@@ -59,8 +59,7 @@ namespace GeometryFriendsAgents
 
         //Area of the game screen
         private Rectangle area;
-
-<<<<<<< HEAD
+        
         const int max_size = 10000;
 
         int c2to1(int x,int y)
@@ -165,19 +164,7 @@ namespace GeometryFriendsAgents
             for (int i = 0; i < N; i++)
                 for (int j = 0; j < M; j++)
                     dist[i, j] = 0;
-
-
-            Debug.WriteLine(i1);
-
-            Debug.WriteLine(j1);
-
-
-            Debug.WriteLine(i2);
-
-            Debug.WriteLine(j2);
-
-            Debug.WriteLine(".................");
-            
+  
             q.Enqueue(c2to1(i1, j1));
             dist[i1, j1] = 1;
             while(q.Count!=0)
@@ -206,28 +193,14 @@ namespace GeometryFriendsAgents
 
 
             }
-
-            for (int i = 0; i < M; i++)
-            {
-                string str = "";
-                for (int j = 0; j < N; j++)
-                {
-                    str += dist[j, i].ToString();
-
-
-                }
-
-                Debug.WriteLine(str);
-            }
+            
 
             return -1;
         }
 
-=======
         private MCTSTree MCTSTree;
         private double CP = 1 / Math.Sqrt(2);
         private const float SECONDS_OF_SIMULATION = 35;
->>>>>>> origin/master
 
         public CircleAgent()
         {
@@ -244,12 +217,9 @@ namespace GeometryFriendsAgents
             possibleMoves.Add(Moves.ROLL_LEFT);
             possibleMoves.Add(Moves.ROLL_RIGHT);
             possibleMoves.Add(Moves.JUMP);
-<<<<<<< HEAD
 
-=======
             possibleMoves.Add(Moves.NO_ACTION);         
       
->>>>>>> origin/master
             //history keeping
             uncaughtCollectibles = new List<CollectibleRepresentation>();
             caughtCollectibles = new List<CollectibleRepresentation>();
@@ -331,10 +301,9 @@ namespace GeometryFriendsAgents
         //implements abstract circle interface: updates the agent state logic and predictions
         public override void Update(TimeSpan elapsedGameTime)
         {
-<<<<<<< HEAD
 
             Debug.WriteLine(bfs_heura(50, 50, 50, 200, true));
-=======
+
             //Every second one new action is choosen
             if (lastMoveTime == 60)
                 lastMoveTime = 0;
@@ -349,7 +318,6 @@ namespace GeometryFriendsAgents
                 else
                     lastMoveTime = 60;
             }
->>>>>>> origin/master
         }
 
         //implements abstract circle interface: signals the agent the end of the current level
