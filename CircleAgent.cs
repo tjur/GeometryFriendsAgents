@@ -205,9 +205,9 @@ namespace GeometryFriendsAgents
             return max_size * 2;
         }
 
-        private MCTSTree MCTSTree;
-        private double CP = 1 / Math.Sqrt(2);
-        private const float SECONDS_OF_SIMULATION = 35;
+        private MCTSTreeNode root;
+        private double CP;
+        private int NumberOfCollectibles;
 
         public CircleAgent()
         {
@@ -225,7 +225,7 @@ namespace GeometryFriendsAgents
             possibleMoves.Add(Moves.ROLL_RIGHT);
             possibleMoves.Add(Moves.JUMP);
 
-            possibleMoves.Add(Moves.NO_ACTION);
+            // possibleMoves.Add(Moves.NO_ACTION);
 
             //history keeping
             uncaughtCollectibles = new List<CollectibleRepresentation>();
@@ -252,6 +252,9 @@ namespace GeometryFriendsAgents
 
             //send a message to the rectangle informing that the circle setup is complete and show how to pass an attachment: a pen object
             messages.Add(new AgentMessage("Setup complete, testing to send an object as an attachment.", new Pen(Color.AliceBlue)));
+
+            NumberOfCollectibles = nCollectiblesLeft;
+            CP = (double)NumberOfCollectibles / Math.Sqrt(2);
         }
 
         //implements abstract circle interface: registers updates from the agent's sensors that it is up to date with the latest environment information
@@ -414,16 +417,14 @@ namespace GeometryFriendsAgents
 
         private double DefaultPolicy(ActionSimulator simulator, MCTSTreeNode node)
         {
-            List<CollectibleRepresentation> caughtCollectibles = new List<CollectibleRepresentation>();
+            const float SECONDS_OF_SIMULATION = 20;
 
             simulator.AddInstruction(node.Move, 1);
 
             for (int i = 0; i < SECONDS_OF_SIMULATION; i++)
                 simulator.AddInstruction(possibleMoves[rnd.Next(possibleMoves.Count)], 1);
 
-            simulator.SimulatorCollectedEvent += (Object sender, CollectibleRepresentation collectibleCaught) => { caughtCollectibles.Add(collectibleCaught); };
             simulator.Update(SECONDS_OF_SIMULATION);
-
 
             float min_d = area.Width * area.Height;
             // todo: uwzględnić jeszcze odległość do najbliższego niezebranego
@@ -443,15 +444,13 @@ namespace GeometryFriendsAgents
             double CONST2 = 600;
             double g = Math.Max(-min_d / CONST2 + 1, 0);
 
-
-
-
-            return caughtCollectibles.Count + g;
+            int CollectiblesCaught = NumberOfCollectibles - simulator.CollectiblesUncaughtCount;
+            return CollectiblesCaught + g;
         }
 
         public Moves UCTSearch(ActionSimulator simulator)
         {
-            MCTSTreeNode root = new MCTSTreeNode(Moves.NO_ACTION, null);
+            if (root == null) root = new MCTSTreeNode(Moves.NO_ACTION, null);
             DateTime start = DateTime.Now;
 
             while ((DateTime.Now - start).Seconds < 1)
@@ -459,12 +458,17 @@ namespace GeometryFriendsAgents
                 MCTSTreeNode node = TreePolicy(simulator, root);
                 double value = DefaultPolicy(simulator, node);
                 BackUp(node, value);
+                simulator.ResetSimulator();
             }
 
             MCTSTreeNode bestNode = BestChild(root, 0);
 
             Log.LogInformation("Root simulations: " + root.Simulations + ", value: " + root.Value);
-            Log.LogInformation("Best node simulations: " + bestNode.Simulations + ", value: " + bestNode.Value);
+            Log.LogInformation("Best node (" + bestNode.Move + ") simulations: " + bestNode.Simulations + ", value: " + bestNode.Value);
+
+            root = bestNode;
+            root.Parent = null;
+
             return bestNode.Move;
         }
     }

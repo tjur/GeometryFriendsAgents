@@ -22,7 +22,7 @@ namespace GeometryFriendsAgents
         public double Value { get; set; }
         public int Simulations { get; set; }
 
-        public MCTSTreeNode Parent { get; }
+        public MCTSTreeNode Parent { get; set; }
 
         public List<MCTSTreeNode> Children { get; }
 
