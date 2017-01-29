@@ -205,7 +205,6 @@ namespace GeometryFriendsAgents
             return max_size * 2;
         }
 
-        private MCTSTreeNode root;
         private double CP;
         private int NumberOfCollectibles;
 
@@ -450,14 +449,20 @@ namespace GeometryFriendsAgents
 
         public Moves UCTSearch(ActionSimulator simulator)
         {
-            if (root == null) root = new MCTSTreeNode(Moves.NO_ACTION, null);
+            if (simulator == null) { return Moves.NO_ACTION; }
+
+            MCTSTreeNode root = new MCTSTreeNode(Moves.NO_ACTION, null);
             DateTime start = DateTime.Now;
 
             while ((DateTime.Now - start).Seconds < 1)
             {
+                simulator.AddInstruction(Moves.NO_ACTION, 1);
+                simulator.SimulatorStep = 0.1f;
+
                 MCTSTreeNode node = TreePolicy(simulator, root);
                 double value = DefaultPolicy(simulator, node);
                 BackUp(node, value);
+
                 simulator.ResetSimulator();
             }
 
@@ -465,9 +470,6 @@ namespace GeometryFriendsAgents
 
             Log.LogInformation("Root simulations: " + root.Simulations + ", value: " + root.Value);
             Log.LogInformation("Best node (" + bestNode.Move + ") simulations: " + bestNode.Simulations + ", value: " + bestNode.Value);
-
-            root = bestNode;
-            root.Parent = null;
 
             return bestNode.Move;
         }
