@@ -255,6 +255,9 @@ namespace GeometryFriendsAgents
 
             NumberOfCollectibles = nCollectiblesLeft;
             CP = (double)NumberOfCollectibles / Math.Sqrt(2);
+
+            PointsCreator pointsCreator = new PointsCreator(nI, rI, cI, oI, rPI, cPI, colI, area);
+            LevelDrawer.SaveImage(rI, cI, oI, rPI, cPI, colI, pointsCreator.CreatePoints(), area);
         }
 
         //implements abstract circle interface: registers updates from the agent's sensors that it is up to date with the latest environment information
@@ -311,7 +314,6 @@ namespace GeometryFriendsAgents
         //implements abstract circle interface: updates the agent state logic and predictions
         public override void Update(TimeSpan elapsedGameTime)
         {
-
             //Every second one new action is choosen
             if (lastMoveTime == 60)
                 lastMoveTime = 0;
