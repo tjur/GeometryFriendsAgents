@@ -10,7 +10,7 @@ namespace GeometryFriendsAgents
 {
     static class LevelDrawer
     {
-        // rysuje dany level (wraz z wyznaczonymi przez PointsCreator punktami) i zapisuje obraz do pliku .png
+        // rysuje dany level (wraz z wyznaczonymi przez VerticesCreator wierzchołkami) i zapisuje obraz do pliku .png
         public static void SaveImage(
                              RectangleRepresentation rI,
                              CircleRepresentation cI,
@@ -18,11 +18,13 @@ namespace GeometryFriendsAgents
                              ObstacleRepresentation[] rPI,
                              ObstacleRepresentation[] cPI,
                              CollectibleRepresentation[] colI,
-                             List<Point> Points,
+                             List<Vertex> Vertices,
                              Rectangle area, 
                              string fileName = "levelView")
         {
-            Bitmap bitmap = new Bitmap(area.Width + 100, area.Height + 100, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            const int borderWidth = 40; // szerokość czarnej ramki otaczającej każdą planszę
+
+            Bitmap bitmap = new Bitmap(area.Width + 2 * borderWidth, area.Height + 2 * borderWidth, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bitmap);
 
             g.Clear(Color.LightBlue);
@@ -43,9 +45,9 @@ namespace GeometryFriendsAgents
             foreach (var collectible in colI)
                 g.FillPolygon(Brushes.Purple, CreatePoints(collectible));
 
-            // punkty utworzone przez PointsCreator
-            foreach (var point in Points)
-                g.FillRectangle(Brushes.Pink, CreateRectangle(point));
+            // wierzchołki utworzone przez VerticesCreator
+            foreach (var vertex in Vertices)
+                g.FillRectangle(Brushes.Pink, CreateRectangle(vertex));
 
             bitmap.Save(fileName + ".png", ImageFormat.Png);
         }
@@ -58,12 +60,12 @@ namespace GeometryFriendsAgents
             return new Rectangle((int)leftUpCornerX, (int)leftUpCornerY, (int)obstacle.Width, (int)obstacle.Height);
         }
 
-        private static Rectangle CreateRectangle(Point point)
+        private static Rectangle CreateRectangle(Vertex vertex)
         {
-            float leftUpCornerX = point.X - (point.Width / 2);
-            float leftUpCornerY = point.Y - (point.Height / 2);
+            float leftUpCornerX = vertex.X - (vertex.Width / 2);
+            float leftUpCornerY = vertex.Y - (vertex.Height / 2);
 
-            return new Rectangle((int)leftUpCornerX, (int)leftUpCornerY, (int)point.Width, (int)point.Height);
+            return new Rectangle((int)leftUpCornerX, (int)leftUpCornerY, (int)vertex.Width, (int)vertex.Height);
         }
 
         private static System.Drawing.Point[] CreatePoints(CollectibleRepresentation collectible)

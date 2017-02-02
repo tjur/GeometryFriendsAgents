@@ -205,7 +205,6 @@ namespace GeometryFriendsAgents
             return max_size * 2;
         }
 
-        private MCTSTreeNode root;
         private double CP;
         private int NumberOfCollectibles;
 
@@ -256,8 +255,19 @@ namespace GeometryFriendsAgents
             NumberOfCollectibles = nCollectiblesLeft;
             CP = (double)NumberOfCollectibles / Math.Sqrt(2);
 
-            PointsCreator pointsCreator = new PointsCreator(nI, rI, cI, oI, rPI, cPI, colI, area);
-            LevelDrawer.SaveImage(rI, cI, oI, rPI, cPI, colI, pointsCreator.CreatePoints(), area);
+            // dodaję obramowanie planszy jako przeszkody (aby można było ją narysować i postawić na niej wierzchołki)
+            const int borderWidth = 40; // szerokość czarnej ramki otaczającej każdą planszę
+
+            var oIList = obstaclesInfo.ToList();
+            oIList.Add(new ObstacleRepresentation(borderWidth / 2, (area.Height + 2 * borderWidth) / 2, borderWidth, area.Height + 2 * borderWidth));
+            oIList.Add(new ObstacleRepresentation(area.Width + borderWidth + borderWidth / 2, (area.Height + 2 * borderWidth) / 2, borderWidth, area.Height + 2 * borderWidth));
+            oIList.Add(new ObstacleRepresentation((area.Width + 2 * borderWidth) / 2, borderWidth / 2, area.Width, borderWidth));
+            oIList.Add(new ObstacleRepresentation((area.Width + 2 * borderWidth) / 2, area.Height + borderWidth + borderWidth / 2, area.Width, borderWidth));
+            var newOIArray = oIList.ToArray();
+
+            VerticesCreator verticesCreator = new VerticesCreator(nI, rI, cI, newOIArray, rPI, cPI, colI, area);
+            List<Vertex> Vertices = verticesCreator.CreateVertices();
+            LevelDrawer.SaveImage(rI, cI, newOIArray, rPI, cPI, colI, Vertices, area);
         }
 
         //implements abstract circle interface: registers updates from the agent's sensors that it is up to date with the latest environment information
@@ -452,14 +462,20 @@ namespace GeometryFriendsAgents
 
         public Moves UCTSearch(ActionSimulator simulator)
         {
-            if (root == null) root = new MCTSTreeNode(Moves.NO_ACTION, null);
+            if (simulator == null) { return Moves.NO_ACTION; }
+
+            MCTSTreeNode root = new MCTSTreeNode(Moves.NO_ACTION, null);
             DateTime start = DateTime.Now;
 
             while ((DateTime.Now - start).Seconds < 1)
             {
+                simulator.AddInstruction(Moves.NO_ACTION, 1);
+                simulator.SimulatorStep = 0.1f;
+
                 MCTSTreeNode node = TreePolicy(simulator, root);
                 double value = DefaultPolicy(simulator, node);
                 BackUp(node, value);
+
                 simulator.ResetSimulator();
             }
 
@@ -467,9 +483,6 @@ namespace GeometryFriendsAgents
 
             Log.LogInformation("Root simulations: " + root.Simulations + ", value: " + root.Value);
             Log.LogInformation("Best node (" + bestNode.Move + ") simulations: " + bestNode.Simulations + ", value: " + bestNode.Value);
-
-            root = bestNode;
-            root.Parent = null;
 
             return bestNode.Move;
         }

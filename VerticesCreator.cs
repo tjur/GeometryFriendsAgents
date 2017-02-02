@@ -7,7 +7,7 @@ using System.Text;
 
 namespace GeometryFriendsAgents
 {
-    class PointsCreator
+    class VerticesCreator
     {
         private CountInformation numbersInfo;
         private RectangleRepresentation rectangleInfo;
@@ -18,9 +18,9 @@ namespace GeometryFriendsAgents
         private CollectibleRepresentation[] collectiblesInfo;
         private Rectangle area;
 
-        public List<Point> Points { get; }
+        public List<Vertex> Vertices { get; }
 
-        public PointsCreator(
+        public VerticesCreator(
                         CountInformation nI,
                         RectangleRepresentation rI,
                         CircleRepresentation cI,
@@ -39,30 +39,30 @@ namespace GeometryFriendsAgents
             collectiblesInfo = colI;
             this.area = area;
 
-            Points = new List<Point>();
+            Vertices = new List<Vertex>();
         }
 
-        public List<Point> CreatePoints()
+        public List<Vertex> CreateVertices()
         {
-            CreateObstacleStartEndPoints();
+            CreateObstacleStartEndVertices();
 
-            return Points;
+            return Vertices;
         }
 
-        // tworzy punkty na początku i końcu każdej platformy (jeśli nie ma tam innej przeszkody)
-        private void CreateObstacleStartEndPoints()
+        // tworzy wierzchołki na początku i końcu każdej platformy (jeśli nie ma tam innej przeszkody)
+        private void CreateObstacleStartEndVertices()
         {
             foreach (var obstacle in obstaclesInfo)
-                CreateStartEndPoint(obstacle);
+                CreateStartEndVertex(obstacle);
 
             foreach (var obstacle in circlePlatformsInfo)
-                CreateStartEndPoint(obstacle);
+                CreateStartEndVertex(obstacle);
 
             foreach (var obstacle in rectanglePlatformsInfo)
-                CreateStartEndPoint(obstacle);
+                CreateStartEndVertex(obstacle);
         }
 
-        private void CreateStartEndPoint(ObstacleRepresentation obstacle)
+        private void CreateStartEndVertex(ObstacleRepresentation obstacle)
         {
             float leftTopCornerX = obstacle.X - (obstacle.Width / 2);
             float rightTopCornerX = obstacle.X + (obstacle.Width / 2);
@@ -71,36 +71,36 @@ namespace GeometryFriendsAgents
             float Width = 50;
             float Height = 40;
 
-            Point point;
+            Vertex vertex;
 
-            // na razie bardzo proste tworzenie punktów, sprawdza tylko kolizje z przeszkodami (punkty mają jednakową szer. i wys.)
+            // na razie bardzo proste tworzenie wierzchołków, sprawdza tylko kolizje z przeszkodami (wierzchołki mają jednakową szer. i wys.)
 
-            // wąska przeszkoda - zamiat dwóch robimy jeden punkt
+            // wąska przeszkoda - zamiat dwóch robimy jeden wierzchołek
             if (obstacle.Width <= 2 * Width)
             {
-                point = new Point(obstacle.X, upCornerY - (Height / 2), obstacle.Width, Height);
-                if (PointNotCollide(point))
-                    Points.Add(point);
+                vertex = new Vertex(obstacle.X, upCornerY - (Height / 2), obstacle.Width, Height);
+                if (VertexNotCollide(vertex))
+                    Vertices.Add(vertex);
 
                 return;
             }
 
-            point = new Point(leftTopCornerX + (Width / 2), upCornerY - (Height / 2), Width, Height);
-            if (PointNotCollide(point))
-                Points.Add(point);
-            point = new Point(rightTopCornerX - (Width / 2), upCornerY - (Height / 2), Width, Height);
-            if (PointNotCollide(point))
-                Points.Add(point);
+            vertex = new Vertex(leftTopCornerX + (Width / 2), upCornerY - (Height / 2), Width, Height);
+            if (VertexNotCollide(vertex))
+                Vertices.Add(vertex);
+            vertex = new Vertex(rightTopCornerX - (Width / 2), upCornerY - (Height / 2), Width, Height);
+            if (VertexNotCollide(vertex))
+                Vertices.Add(vertex);
         }
 
-        // sprawdza czy podany pounkt nie nachodzi na jakąś przeszkodę
-        private bool PointNotCollide(Point point)
+        // sprawdza czy podany wierzchołek nie nachodzi na jakąś przeszkodę lub nie wychodzi poza planszę
+        private bool VertexNotCollide(Vertex vertex)
         {
-            foreach(var obstacle in obstaclesInfo)
-            {
-                float top1 = point.Y - (point.Height / 2); float right1 = point.X + (point.Width / 2);
-                float bottom1 = point.Y + (point.Height / 2); float left1 = point.X - (point.Width / 2);
+            float top1 = vertex.Y - (vertex.Height / 2); float right1 = vertex.X + (vertex.Width / 2);
+            float bottom1 = vertex.Y + (vertex.Height / 2); float left1 = vertex.X - (vertex.Width / 2);
 
+            foreach (var obstacle in obstaclesInfo)
+            {
                 float top2 = obstacle.Y - (obstacle.Height / 2); float right2 = obstacle.X + (obstacle.Width / 2);
                 float bottom2 = obstacle.Y + (obstacle.Height / 2); float left2 = obstacle.X - (obstacle.Width / 2);
 
@@ -110,9 +110,6 @@ namespace GeometryFriendsAgents
 
             foreach (var obstacle in circlePlatformsInfo)
             {
-                float top1 = point.Y - (point.Height / 2); float right1 = point.X + (point.Width / 2);
-                float bottom1 = point.Y + (point.Height / 2); float left1 = point.X - (point.Width / 2);
-
                 float top2 = obstacle.Y - (obstacle.Height / 2); float right2 = obstacle.X + (obstacle.Width / 2);
                 float bottom2 = obstacle.Y + (obstacle.Height / 2); float left2 = obstacle.X - (obstacle.Width / 2);
 
@@ -122,9 +119,6 @@ namespace GeometryFriendsAgents
 
             foreach (var obstacle in rectanglePlatformsInfo)
             {
-                float top1 = point.Y - (point.Height / 2); float right1 = point.X + (point.Width / 2);
-                float bottom1 = point.Y + (point.Height / 2); float left1 = point.X - (point.Width / 2);
-
                 float top2 = obstacle.Y - (obstacle.Height / 2); float right2 = obstacle.X + (obstacle.Width / 2);
                 float bottom2 = obstacle.Y + (obstacle.Height / 2); float left2 = obstacle.X - (obstacle.Width / 2);
 
@@ -132,13 +126,17 @@ namespace GeometryFriendsAgents
                     return false;
             }
 
+            // to jest po to, aby wierzchołki nie powstały na obramowaniu planszy (po zewnętrznej stronie)
+            if (vertex.Y < 0)
+                return false;
+
             return true;
         }
     }
 
 
-    // punkt (wierzchołek grafu), będący tak naprawdę prostokątem
-    class Point
+    // wierzchołek grafu, będący tak naprawdę prostokątem na planszy
+    class Vertex
     {
         // przechowywana pozycja, to pozycja środka
         public float X { get; }
@@ -146,7 +144,7 @@ namespace GeometryFriendsAgents
         public float Width { get; }
         public float Height { get; }
 
-        public Point(float X, float Y, float Width, float Height)
+        public Vertex(float X, float Y, float Width, float Height)
         {
             this.X = X;
             this.Y = Y;
