@@ -266,7 +266,8 @@ namespace GeometryFriendsAgents
             var newOIArray = oIList.ToArray();
 
             VerticesCreator verticesCreator = new VerticesCreator(nI, rI, cI, newOIArray, rPI, cPI, colI, area);
-            List<Vertex> Vertices = verticesCreator.CreateVertices();
+            verticesCreator.CreateVertices();
+            List<Vertex> Vertices = verticesCreator.Vertices;
 
             List<DebugInformation> newDebugInfo = new List<DebugInformation>();
             foreach (var vertex in Vertices)

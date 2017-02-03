@@ -18,7 +18,7 @@ namespace GeometryFriendsAgents
         private CollectibleRepresentation[] collectiblesInfo;
         private Rectangle area;
 
-        public List<Vertex> Vertices { get; }
+        public List<Vertex> Vertices { get; private set; }
 
         public VerticesCreator(
                         CountInformation nI,
@@ -38,15 +38,17 @@ namespace GeometryFriendsAgents
             circlePlatformsInfo = cPI;
             collectiblesInfo = colI;
             this.area = area;
-
-            Vertices = new List<Vertex>();
         }
 
-        public List<Vertex> CreateVertices()
+        public void CreateVertices()
         {
-            CreateObstacleStartEndVertices();
+            if (Vertices == null)
+            {
+                Vertices = new List<Vertex>();
 
-            return Vertices;
+                CreateObstacleStartEndVertices();
+                CreateCollectibleVertices();
+            }
         }
 
         // tworzy wierzchołki na początku i końcu każdej platformy (jeśli nie ma tam innej przeszkody)
@@ -76,7 +78,7 @@ namespace GeometryFriendsAgents
             // na razie bardzo proste tworzenie wierzchołków, sprawdza tylko kolizje z przeszkodami (wierzchołki mają jednakową szer. i wys.)
 
             // wąska przeszkoda - zamiat dwóch robimy jeden wierzchołek
-            if (obstacle.Width <= 2 * Width)
+            if (obstacle.Width <= Width)
             {
                 vertex = new Vertex(obstacle.X, upCornerY - (Height / 2), obstacle.Width, Height);
                 if (VertexNotCollide(vertex))
@@ -94,6 +96,8 @@ namespace GeometryFriendsAgents
         }
 
         // sprawdza czy podany wierzchołek nie nachodzi na jakąś przeszkodę lub nie wychodzi poza planszę
+        // wierzchołek nie zostanie postawiony również wtedy, gdy jego lewy lub prawy bok styka się z jakąś przeszkodą
+        // dzięki temu nie tworzą się wierzchołki w kątach
         private bool VertexNotCollide(Vertex vertex)
         {
             float top1 = vertex.Y - (vertex.Height / 2); float right1 = vertex.X + (vertex.Width / 2);
@@ -104,7 +108,7 @@ namespace GeometryFriendsAgents
                 float top2 = obstacle.Y - (obstacle.Height / 2); float right2 = obstacle.X + (obstacle.Width / 2);
                 float bottom2 = obstacle.Y + (obstacle.Height / 2); float left2 = obstacle.X - (obstacle.Width / 2);
 
-                if (left1 < right2 && right1 > left2 && top1 < bottom2 && bottom1 > top2)
+                if (left1 <= right2 && right1 >= left2 && top1 < bottom2 && bottom1 > top2)
                     return false;
             }
 
@@ -113,7 +117,7 @@ namespace GeometryFriendsAgents
                 float top2 = obstacle.Y - (obstacle.Height / 2); float right2 = obstacle.X + (obstacle.Width / 2);
                 float bottom2 = obstacle.Y + (obstacle.Height / 2); float left2 = obstacle.X - (obstacle.Width / 2);
 
-                if (left1 < right2 && right1 > left2 && top1 < bottom2 && bottom1 > top2)
+                if (left1 <= right2 && right1 >= left2 && top1 < bottom2 && bottom1 > top2)
                     return false;
             }
 
@@ -122,7 +126,7 @@ namespace GeometryFriendsAgents
                 float top2 = obstacle.Y - (obstacle.Height / 2); float right2 = obstacle.X + (obstacle.Width / 2);
                 float bottom2 = obstacle.Y + (obstacle.Height / 2); float left2 = obstacle.X - (obstacle.Width / 2);
 
-                if (left1 < right2 && right1 > left2 && top1 < bottom2 && bottom1 > top2)
+                if (left1 <= right2 && right1 >= left2 && top1 < bottom2 && bottom1 > top2)
                     return false;
             }
 
@@ -131,6 +135,32 @@ namespace GeometryFriendsAgents
                 return false;
 
             return true;
+        }
+
+        // tworzy wierzchołki w miejscu każdego diamencika oraz pod nim
+        private void CreateCollectibleVertices()
+        {
+            int R = 40; // szer. i wys. wierzchołka na diamencie
+            int Width = 50;
+            int Height = 40;
+
+            List<ObstacleRepresentation> AllObstacles = obstaclesInfo.Concat(circlePlatformsInfo).Concat(rectanglePlatformsInfo).ToList();
+
+            foreach (var coll in collectiblesInfo)
+            {
+                // na diamencie
+                Vertices.Add(new Vertex(coll.X, coll.Y, R, R));
+
+                // pod diamentem
+                // znajdujemy najbliższą przeszkodę pod diamentem i tworzymy tam wierzchołek
+                var obstacleUnder = AllObstacles
+                                            .Where(obst => obst.Y > coll.Y && obst.X - obst.Width / 2 <= coll.X && obst.X + obst.Width / 2 >= coll.X)
+                                            .Aggregate((obst1, obst2) => (obst1.Y - coll.Y) < (obst2.Y - coll.Y) ? obst1 : obst2);
+                
+                // czy sprawdzać tutaj czy ta znaleziona przeszkoda jest za nisko (tzn. kulka nie doskoczy z niej) i wtedy nie dodawać wierzchołka?
+                Vertices.Add(new Vertex(coll.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (Height / 2), Width, Height));
+            }
+                
         }
     }
 

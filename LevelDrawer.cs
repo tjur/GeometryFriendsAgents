@@ -29,6 +29,10 @@ namespace GeometryFriendsAgents
 
             g.Clear(Color.LightBlue);
 
+            // wierzchołki utworzone przez VerticesCreator
+            foreach (var vertex in Vertices)
+                g.FillRectangle(Brushes.Pink, CreateRectangle(vertex));
+
             // przeszkody ogólne
             foreach (var obstacle in oI)
                 g.FillRectangle(Brushes.Black, CreateRectangle(obstacle));
@@ -44,10 +48,6 @@ namespace GeometryFriendsAgents
             // diamenty
             foreach (var collectible in colI)
                 g.FillPolygon(Brushes.Purple, CreatePoints(collectible));
-
-            // wierzchołki utworzone przez VerticesCreator
-            foreach (var vertex in Vertices)
-                g.FillRectangle(Brushes.Pink, CreateRectangle(vertex));
 
             bitmap.Save(fileName + ".png", ImageFormat.Png);
         }
@@ -73,7 +73,7 @@ namespace GeometryFriendsAgents
             var Points = new System.Drawing.Point[4];
             float X = collectible.X;
             float Y = collectible.Y;
-            int R = 25;
+            int R = 30;
 
             Points[0] = new System.Drawing.Point((int)X, (int)(Y - R));
             Points[1] = new System.Drawing.Point((int)(X + R), (int)Y);
