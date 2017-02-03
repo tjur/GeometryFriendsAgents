@@ -267,6 +267,12 @@ namespace GeometryFriendsAgents
 
             VerticesCreator verticesCreator = new VerticesCreator(nI, rI, cI, newOIArray, rPI, cPI, colI, area);
             List<Vertex> Vertices = verticesCreator.CreateVertices();
+
+            List<DebugInformation> newDebugInfo = new List<DebugInformation>();
+            foreach (var vertex in Vertices)
+                newDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.Orange));
+            debugInfo = newDebugInfo.ToArray();
+
             LevelDrawer.SaveImage(rI, cI, newOIArray, rPI, cPI, colI, Vertices, area);
         }
 
@@ -445,7 +451,6 @@ namespace GeometryFriendsAgents
                 float d = bfs_heura(simulator.CirclePositionX, simulator.CirclePositionY, item.X, item.Y, true);
                 if (d < min_d)
                     min_d = d;
-
             }
 
             //f(x)= 1/e^(x/CONST)^2    
@@ -470,7 +475,7 @@ namespace GeometryFriendsAgents
             while ((DateTime.Now - start).Seconds < 1)
             {
                 simulator.AddInstruction(Moves.NO_ACTION, 1);
-                simulator.SimulatorStep = 0.1f;
+                // simulator.SimulatorStep = 0.1f;
 
                 MCTSTreeNode node = TreePolicy(simulator, root);
                 double value = DefaultPolicy(simulator, node);
