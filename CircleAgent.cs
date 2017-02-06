@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Reflection;
 
 namespace GeometryFriendsAgents
 {
@@ -325,7 +326,7 @@ namespace GeometryFriendsAgents
         //implements abstract circle interface: GeometryFriends agents manager gets the current action intended to be actuated in the enviroment for this agent
         public override Moves GetAction()
         {
-            return currentAction;
+            return Moves.ROLL_LEFT;
         }
 
         //implements abstract circle interface: updates the agent state logic and predictions
@@ -339,7 +340,8 @@ namespace GeometryFriendsAgents
             {
                 if (!(DateTime.Now.Second == 59))
                 {
-                    currentAction = UCTSearch(predictor);
+                    // currentAction = UCTSearch(predictor);
+                    HackSimulator(predictor);
                     lastMoveTime = lastMoveTime + 1;
                 }
                 else
@@ -491,6 +493,29 @@ namespace GeometryFriendsAgents
             Log.LogInformation("Best node (" + bestNode.Move + ") simulations: " + bestNode.Simulations + ", value: " + bestNode.Value);
 
             return bestNode.Move;
+        }
+
+        private void HackSimulator(ActionSimulator simulator)
+        {
+            if (simulator == null) return;
+
+            var circle = ReflectionUtils.GetAssociatedCircleCharacter(simulator);
+
+            ReflectionUtils.SetSimulator(simulator, new PointF(700, 90), new PointF(0, 0));
+
+            var body = ReflectionUtils.GetBody(circle);
+            //ReflectionUtils.ListAllProperties(body);
+
+            Log.LogInformation(simulator.CirclePositionX.ToString());
+            Log.LogInformation(ReflectionUtils.GetBodyLinearVelocity(body).ToString());
+
+            // simulator.AddInstruction(Moves.MOVE_LEFT, 3000);
+            simulator.Update(3);
+
+            Log.LogInformation(simulator.CirclePositionX.ToString());
+            Log.LogInformation(ReflectionUtils.GetBodyLinearVelocity(body).ToString());
+
+            ReflectionUtils.ListAllProperties(body);
         }
     }
 }
