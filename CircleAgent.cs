@@ -62,6 +62,9 @@ namespace GeometryFriendsAgents
         //Area of the game screen
         private Rectangle area;
 
+        // Graf utworzony przez GraphCreator
+        private Graph Graph;
+
         const int max_size = 10000;
 
         //skromne funkcje aby uniknac krotek
@@ -266,16 +269,15 @@ namespace GeometryFriendsAgents
             oIList.Add(new ObstacleRepresentation((area.Width + 2 * borderWidth) / 2, area.Height + borderWidth + borderWidth / 2, area.Width, borderWidth));
             var newOIArray = oIList.ToArray();
 
-            VerticesCreator verticesCreator = new VerticesCreator(nI, rI, cI, newOIArray, rPI, cPI, colI, area);
-            verticesCreator.CreateVertices();
-            List<Vertex> Vertices = verticesCreator.Vertices;
+            GraphCreator graphCreator = new GraphCreator(nI, rI, cI, newOIArray, rPI, cPI, colI, area);
+            Graph = graphCreator.Graph;
 
             List<DebugInformation> newDebugInfo = new List<DebugInformation>();
-            foreach (var vertex in Vertices)
+            foreach (var vertex in Graph.Vertices)
                 newDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.Orange));
             debugInfo = newDebugInfo.ToArray();
 
-            LevelDrawer.SaveImage(rI, cI, newOIArray, rPI, cPI, colI, Vertices, area);
+            //LevelDrawer.SaveImage(rI, cI, newOIArray, rPI, cPI, colI, Graph.Vertices, area);
         }
 
         //implements abstract circle interface: registers updates from the agent's sensors that it is up to date with the latest environment information

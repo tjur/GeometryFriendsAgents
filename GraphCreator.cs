@@ -7,7 +7,7 @@ using System.Text;
 
 namespace GeometryFriendsAgents
 {
-    class VerticesCreator
+    class GraphCreator
     {
         private CountInformation numbersInfo;
         private RectangleRepresentation rectangleInfo;
@@ -18,9 +18,19 @@ namespace GeometryFriendsAgents
         private CollectibleRepresentation[] collectiblesInfo;
         private Rectangle area;
 
-        public List<Vertex> Vertices { get; private set; }
+        private Graph graph;
+        public Graph Graph
+        {
+            get
+            {
+                if (graph == null)
+                    CreateGraph();
 
-        public VerticesCreator(
+                return graph;
+            }
+        }
+
+        public GraphCreator(
                         CountInformation nI,
                         RectangleRepresentation rI,
                         CircleRepresentation cI,
@@ -40,18 +50,49 @@ namespace GeometryFriendsAgents
             this.area = area;
         }
 
-        public void CreateVertices()
+        private void CreateGraph()
         {
-            if (Vertices == null)
-            {
-                Vertices = new List<Vertex>();
+            graph = new Graph();
 
-                CreateObstacleStartEndVertices();
-                CreateCollectibleVertices();
+            CreateOnStartVertex();
+            CreateObstacleStartEndVertices();
+            CreateCollectibleVertices();
+        }
+
+        // tworzy wierzchołek (lub wierzchołki, gdy na planszy jest zarówno kółko i prostokąt) w miejscu startu
+        private void CreateOnStartVertex()
+        {
+            float Width = 50;
+            float Height = 40;
+
+            List<ObstacleRepresentation> AllObstacles = obstaclesInfo.Concat(circlePlatformsInfo).Concat(rectanglePlatformsInfo).ToList();
+
+            // gdy aktualna mapa zawiera kółko
+            if (!(circleInfo.X == -1000 && circleInfo.Y == -1000))
+            {
+                // znajdujemy przeszkodę na której leży kółko
+                var obstacleUnder = AllObstacles
+                                            .Where(obst => obst.Y > circleInfo.Y && obst.X - obst.Width / 2 <= circleInfo.X && obst.X + obst.Width / 2 >= circleInfo.X)
+                                            .Aggregate((obst1, obst2) => (obst1.Y - circleInfo.Y) < (obst2.Y - circleInfo.Y) ? obst1 : obst2);
+
+                Vertex vertex = new Vertex(circleInfo.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (Height / 2), Width, Height, VertexType.OnCircleStart, obstacleUnder);
+                graph.Vertices.Add(vertex);
+            }
+
+            // gdy aktualna mapa zawiera prostokąt
+            if (!(rectangleInfo.X == -1000 && rectangleInfo.Y == -1000))
+            {
+                // znajdujemy przeszkodę na której leży prostokąt
+                var obstacleUnder = AllObstacles
+                                            .Where(obst => obst.Y > rectangleInfo.Y && obst.X - obst.Width / 2 <= rectangleInfo.X && obst.X + obst.Width / 2 >= rectangleInfo.X)
+                                            .Aggregate((obst1, obst2) => (obst1.Y - rectangleInfo.Y) < (obst2.Y - rectangleInfo.Y) ? obst1 : obst2);
+
+                Vertex vertex = new Vertex(rectangleInfo.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (Height / 2), Width, Height, VertexType.OnRectangleStart, obstacleUnder);
+                graph.Vertices.Add(vertex);
             }
         }
 
-        // tworzy wierzchołki na początku i końcu każdej platformy (jeśli nie ma tam innej przeszkody)
+        // tworzy wierzchołki na początku i końcu każdej platformy (jeśli nie ma tam innej przeszkody lub kąta)
         private void CreateObstacleStartEndVertices()
         {
             foreach (var obstacle in obstaclesInfo)
@@ -75,24 +116,22 @@ namespace GeometryFriendsAgents
 
             Vertex vertex;
 
-            // na razie bardzo proste tworzenie wierzchołków, sprawdza tylko kolizje z przeszkodami (wierzchołki mają jednakową szer. i wys.)
-
-            // wąska przeszkoda - zamiat dwóch robimy jeden wierzchołek
+            // wąska przeszkoda - zamiat dwóch robimy jeden wierzchołek na całej przeszkodzie
             if (obstacle.Width <= Width)
             {
-                vertex = new Vertex(obstacle.X, upCornerY - (Height / 2), obstacle.Width, Height);
+                vertex = new Vertex(obstacle.X, upCornerY - (Height / 2), obstacle.Width, Height, VertexType.OnWholeObstacle, obstacle);
                 if (VertexNotCollide(vertex))
-                    Vertices.Add(vertex);
+                    graph.Vertices.Add(vertex);
 
                 return;
             }
 
-            vertex = new Vertex(leftTopCornerX + (Width / 2), upCornerY - (Height / 2), Width, Height);
+            vertex = new Vertex(leftTopCornerX + (Width / 2), upCornerY - (Height / 2), Width, Height, VertexType.OnObstacleLeft, obstacle);
             if (VertexNotCollide(vertex))
-                Vertices.Add(vertex);
-            vertex = new Vertex(rightTopCornerX - (Width / 2), upCornerY - (Height / 2), Width, Height);
+                graph.Vertices.Add(vertex);
+            vertex = new Vertex(rightTopCornerX - (Width / 2), upCornerY - (Height / 2), Width, Height, VertexType.OnObstacleRight, obstacle);
             if (VertexNotCollide(vertex))
-                Vertices.Add(vertex);
+                graph.Vertices.Add(vertex);
         }
 
         // sprawdza czy podany wierzchołek nie nachodzi na jakąś przeszkodę lub nie wychodzi poza planszę
@@ -148,38 +187,22 @@ namespace GeometryFriendsAgents
 
             foreach (var coll in collectiblesInfo)
             {
+                Vertex vertex;
+
                 // na diamencie
-                Vertices.Add(new Vertex(coll.X, coll.Y, R, R));
+                vertex = new Vertex(coll.X, coll.Y, R, R, VertexType.OnCollectible, null);
+                graph.Vertices.Add(vertex);
 
                 // pod diamentem
                 // znajdujemy najbliższą przeszkodę pod diamentem i tworzymy tam wierzchołek
                 var obstacleUnder = AllObstacles
                                             .Where(obst => obst.Y > coll.Y && obst.X - obst.Width / 2 <= coll.X && obst.X + obst.Width / 2 >= coll.X)
                                             .Aggregate((obst1, obst2) => (obst1.Y - coll.Y) < (obst2.Y - coll.Y) ? obst1 : obst2);
-                
+
                 // czy sprawdzać tutaj czy ta znaleziona przeszkoda jest za nisko (tzn. kulka nie doskoczy z niej) i wtedy nie dodawać wierzchołka?
-                Vertices.Add(new Vertex(coll.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (Height / 2), Width, Height));
-            }
-                
-        }
-    }
-
-
-    // wierzchołek grafu, będący tak naprawdę prostokątem na planszy
-    class Vertex
-    {
-        // przechowywana pozycja, to pozycja środka
-        public float X { get; }
-        public float Y { get; }
-        public float Width { get; }
-        public float Height { get; }
-
-        public Vertex(float X, float Y, float Width, float Height)
-        {
-            this.X = X;
-            this.Y = Y;
-            this.Width = Width;
-            this.Height = Height;
+                vertex = new Vertex(coll.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (Height / 2), Width, Height, VertexType.UnderCollectible, obstacleUnder);
+                graph.Vertices.Add(vertex);
+            }        
         }
     }
 }
