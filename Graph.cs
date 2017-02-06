@@ -23,10 +23,10 @@ namespace GeometryFriendsAgents
     }
 
     // typy wierzchołków
-    enum VertexType { OnCircleStart, OnRectangleStart, OnObstacleLeft, OnObstacleRight, OnWholeObstacle, OnCollectible, UnderCollectible };
+   public enum VertexType { OnCircleStart, OnRectangleStart, OnObstacleLeft, OnObstacleRight, OnWholeObstacle, OnCollectible, UnderCollectible };
 
     // wierzchołek grafu, będący tak naprawdę prostokątem na planszy
-    class Vertex
+   public class Vertex
     {
         // przechowywana pozycja to pozycja środka
         public float X { get; }
