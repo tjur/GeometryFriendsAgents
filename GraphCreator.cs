@@ -1,4 +1,7 @@
-﻿using GeometryFriends.AI.Perceptions.Information;
+﻿using GeometryFriends;
+using GeometryFriends.AI.Perceptions.Information;
+using GeometryFriends.AI.ActionSimulation;
+using GeometryFriends.AI.Debug;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -48,6 +51,78 @@ namespace GeometryFriendsAgents
             circlePlatformsInfo = cPI;
             collectiblesInfo = colI;
             this.area = area;
+        }
+
+        public List<DebugInformation> AddFallingVertices(ActionSimulator simulator)
+        {
+            const float MAX_VELOCITY = 200;
+            const float MAX_ANGULAR_VELOCITY = 4;
+            const float VELOCITIES = 3;
+            const float VELOCITY_STEP = MAX_VELOCITY / VELOCITIES;
+            const float ANGULAR_VELOCITY_STEP = MAX_ANGULAR_VELOCITY / VELOCITIES;
+
+            List<Vertex> fallenVertices = new List<Vertex>();
+            List<DebugInformation> debugInformations = new List<DebugInformation>();
+
+            foreach (Vertex vertex in Graph.Vertices)
+            {
+                if (vertex.Type != VertexType.OnObstacleLeft && vertex.Type != VertexType.OnObstacleRight) continue;
+
+                for (int i = 1; i <= VELOCITIES; i++)
+                {
+                    PointF linearVelocity = new PointF(i * VELOCITY_STEP, 0);
+                    float angularVelocity = i * ANGULAR_VELOCITY_STEP;
+
+                    PointF position;
+                    const float X_POSITION_OFFSET = 10;
+
+                    if (vertex.Type == VertexType.OnObstacleLeft)
+                    {
+                        linearVelocity.X *= -1.0f;
+                        angularVelocity *= -1.0f;
+                        position = new PointF(vertex.X - vertex.Width / 2 + X_POSITION_OFFSET, vertex.Y + vertex.Height / 2 - simulator.CircleVelocityRadius);
+                    }
+
+                    else
+                        position = new PointF(vertex.X + vertex.Width / 2 - X_POSITION_OFFSET, vertex.Y + vertex.Height / 2 - simulator.CircleVelocityRadius);
+
+                    var tuple = _CreateFallenVertex(simulator, position, linearVelocity, angularVelocity, true);
+                    fallenVertices.Add(tuple.Item1);
+                    debugInformations.AddRange(tuple.Item2);
+
+                    tuple = _CreateFallenVertex(simulator, position, linearVelocity, angularVelocity, false);
+                    fallenVertices.Add(tuple.Item1);
+                    debugInformations.AddRange(tuple.Item2);
+                }
+            }
+
+            Graph.Vertices.AddRange(fallenVertices);
+            return debugInformations;
+        }
+
+        private Tuple<Vertex, List<DebugInformation>> _CreateFallenVertex(ActionSimulator simulator, PointF position, PointF linearVelocity, float angularVelocity, bool jump)
+        {
+            const int vertexWidth = 50;
+            const int vertexHeight = 40;
+
+            simulator.ResetSimulator();
+            simulator.DebugInfo = true;
+            // simulator.SimulatorStep = 0.01f;
+
+            ReflectionUtils.SetSimulator(simulator, position, linearVelocity, angularVelocity);
+
+            if (jump) simulator.AddInstruction(GeometryFriends.AI.Moves.JUMP, 100);
+            simulator.Update(0.1f);
+            simulator.Actions.Clear();
+            simulator.Update(0.4f);
+
+            while (simulator.CircleVelocityY <= 0)
+                simulator.Update(0.01f);
+            while (simulator.CircleVelocityY > 0)
+                simulator.Update(0.01f);
+
+            PointF vertexPosition = new PointF(simulator.CirclePositionX, simulator.CirclePositionY + simulator.CircleVelocityRadius - vertexHeight / 2);
+            return Tuple.Create(new Vertex(vertexPosition.X, vertexPosition.Y, vertexWidth, vertexHeight, VertexType.Fallen), simulator.SimulationHistoryDebugInformation);
         }
 
         private void CreateGraph()
@@ -117,14 +192,14 @@ namespace GeometryFriendsAgents
             Vertex vertex;
 
             // wąska przeszkoda - zamiat dwóch robimy jeden wierzchołek na całej przeszkodzie
-            if (obstacle.Width <= Width)
+            /*if (obstacle.Width <= Width)
             {
                 vertex = new Vertex(obstacle.X, upCornerY - (Height / 2), obstacle.Width, Height, VertexType.OnWholeObstacle, obstacle);
                 if (VertexNotCollide(vertex))
                     graph.Vertices.Add(vertex);
 
                 return;
-            }
+            }*/
 
             vertex = new Vertex(leftTopCornerX + (Width / 2), upCornerY - (Height / 2), Width, Height, VertexType.OnObstacleLeft, obstacle);
             if (VertexNotCollide(vertex))
