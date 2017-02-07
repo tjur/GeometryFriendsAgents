@@ -9,10 +9,17 @@ namespace GeometryFriendsAgents
     class Graph
     {
         public List<Vertex> Vertices { get; }
+        public Dictionary<Vertex, List<Vertex>> Neighbours;
 
         public Graph()
         {
             Vertices = new List<Vertex>();
+            Neighbours = new Dictionary<Vertex, List<Vertex>>();
+        }
+
+        public void AddEdge(Vertex vertexFrom, Vertex vertexTo)
+        {
+            Neighbours[vertexFrom].Add(vertexTo);
         }
 
         // dla danej przeszkody zwraca wszystkie wierzchołki, które się na niej znajdują (posortowane rosnąco po X)

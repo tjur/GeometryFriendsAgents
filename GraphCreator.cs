@@ -18,6 +18,8 @@ namespace GeometryFriendsAgents
         private CollectibleRepresentation[] collectiblesInfo;
         private Rectangle area;
 
+        private List<ObstacleRepresentation> AllObstacles;
+
         private Graph graph;
         public Graph Graph
         {
@@ -48,6 +50,7 @@ namespace GeometryFriendsAgents
             circlePlatformsInfo = cPI;
             collectiblesInfo = colI;
             this.area = area;
+            AllObstacles = obstaclesInfo.Concat(circlePlatformsInfo).Concat(rectanglePlatformsInfo).ToList();
         }
 
         private void CreateGraph()
@@ -57,6 +60,8 @@ namespace GeometryFriendsAgents
             CreateOnStartVertex();
             CreateObstacleStartEndVertices();
             CreateCollectibleVertices();
+
+            CreateEdges();
         }
 
         // tworzy wierzchołek (lub wierzchołki, gdy na planszy jest zarówno kółko i prostokąt) w miejscu startu
@@ -64,8 +69,6 @@ namespace GeometryFriendsAgents
         {
             float Width = 50;
             float Height = 40;
-
-            List<ObstacleRepresentation> AllObstacles = obstaclesInfo.Concat(circlePlatformsInfo).Concat(rectanglePlatformsInfo).ToList();
 
             // gdy aktualna mapa zawiera kółko
             if (!(circleInfo.X == -1000 && circleInfo.Y == -1000))
@@ -183,8 +186,6 @@ namespace GeometryFriendsAgents
             int Width = 50;
             int Height = 40;
 
-            List<ObstacleRepresentation> AllObstacles = obstaclesInfo.Concat(circlePlatformsInfo).Concat(rectanglePlatformsInfo).ToList();
-
             foreach (var coll in collectiblesInfo)
             {
                 Vertex vertex;
@@ -203,6 +204,51 @@ namespace GeometryFriendsAgents
                 vertex = new Vertex(coll.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (Height / 2), Width, Height, VertexType.UnderCollectible, obstacleUnder);
                 graph.Vertices.Add(vertex);
             }        
+        }
+
+        private void CreateEdges()
+        {
+            foreach (var vertex in graph.Vertices)
+                graph.Neighbours[vertex] = new List<Vertex>();
+
+            CreateSameObstacleEdges();
+        }
+
+        // łączy wierzchołki na tej samej przeszkodzie (jeśli nie ma pomiędzy nimi żadnej przeszkody)
+        private void CreateSameObstacleEdges()
+        {
+            foreach (var obstacle in AllObstacles)
+            {
+                List<Vertex> VerticesOnObstacle = graph.GetAllVerticesOnObstacle(obstacle);
+                for (int i = 0; i < VerticesOnObstacle.Count - 1; i++)
+                {
+                    Vertex vertexLeft = VerticesOnObstacle[i];
+                    Vertex vertexRight = VerticesOnObstacle[i + 1];
+                    bool obstacleBetween = false;
+
+                    foreach (var obstacle2 in AllObstacles)
+                    {
+                        float top = obstacle2.Y - (obstacle2.Height / 2);
+                        float bottom = obstacle2.Y + (obstacle2.Height / 2);
+                        float left = obstacle2.X - (obstacle2.Width / 2);
+                        float right = obstacle2.X + (obstacle2.Width / 2);
+
+                        if (left > vertexLeft.X && right < vertexRight.X && 
+                            bottom <= obstacle.Y - (obstacle.Height / 2) &&
+                            (bottom >= vertexLeft.Y - (vertexLeft.Height / 2) || bottom >= vertexRight.Y - (vertexRight.Height / 2)))
+                        {
+                            obstacleBetween = true;
+                            break;
+                        }
+                    }
+
+                    if (!obstacleBetween)
+                    {
+                        graph.AddEdge(vertexLeft, vertexRight);
+                        graph.AddEdge(vertexRight, vertexLeft);
+                    }
+                }
+            }
         }
     }
 }
