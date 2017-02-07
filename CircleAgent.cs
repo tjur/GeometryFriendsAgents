@@ -67,6 +67,13 @@ namespace GeometryFriendsAgents
 
         const int max_size = 10000;
 
+
+        float time_step = 1f;
+        DateTime lastaction;
+
+
+
+
         //skromne funkcje aby uniknac krotek
         int c2to1(int x, int y)
         {
@@ -193,18 +200,15 @@ namespace GeometryFriendsAgents
                                         if (i + x == i2 && j + y == j2)
                                             return d;
 
-
                                         dist[i + x, j + y] = d + 1;
                                         q.Enqueue(c2to1(i + x, j + y));
 
-
                                     }
-
-
+                
             }
 
 
-
+        
             //brak sciezki
             return max_size * 2;
         }
@@ -214,6 +218,9 @@ namespace GeometryFriendsAgents
 
         public CircleAgent()
         {
+
+            lastaction = DateTime.Now;
+
             //Change flag if agent is not to be used
             implementedAgent = true;
 
@@ -328,12 +335,14 @@ namespace GeometryFriendsAgents
         //implements abstract circle interface: GeometryFriends agents manager gets the current action intended to be actuated in the enviroment for this agent
         public override Moves GetAction()
         {
-            return Moves.ROLL_LEFT;
+            return currentAction;
         }
 
         //implements abstract circle interface: updates the agent state logic and predictions
+        /*
         public override void Update(TimeSpan elapsedGameTime)
         {
+        
             //Every second one new action is choosen
             if (lastMoveTime == 60)
                 lastMoveTime = 0;
@@ -348,6 +357,18 @@ namespace GeometryFriendsAgents
                 }
                 else
                     lastMoveTime = 60;
+            }
+        }
+        */
+
+        public override void Update(TimeSpan elapsedGameTime)
+        {
+            if ((DateTime.Now-lastaction).TotalSeconds >= time_step)
+            {
+                lastaction = DateTime.Now;        
+                MCTS_with_target mcts = new MCTS_with_target(possibleMoves, currentAction, CP, NumberOfCollectibles);            
+                currentAction = mcts.UCTSearch_with_target(predictor,Graph.Vertices.ElementAt(4),time_step/1000);
+
             }
         }
 
