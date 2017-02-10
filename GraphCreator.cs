@@ -349,11 +349,9 @@ namespace GeometryFriendsAgents
 
             foreach (var coll in collectiblesInfo)
             {
-                Vertex vertex;
-
                 // na diamencie
-                vertex = new Vertex(coll.X, coll.Y, R, R, VertexType.OnCollectible, null);
-                Graph.Vertices.Add(vertex);
+                Vertex VertexOnCollectible = new Vertex(coll.X, coll.Y, R, R, VertexType.OnCollectible, null);
+                Graph.Vertices.Add(VertexOnCollectible);
 
                 // pod diamentem
                 // znajdujemy najbliższą przeszkodę pod diamentem i tworzymy tam wierzchołek
@@ -361,9 +359,21 @@ namespace GeometryFriendsAgents
                                             .Where(obst => obst.Y > coll.Y && obst.X - obst.Width / 2 <= coll.X && obst.X + obst.Width / 2 >= coll.X)
                                             .Aggregate((obst1, obst2) => (obst1.Y - coll.Y) < (obst2.Y - coll.Y) ? obst1 : obst2);
 
-                // czy sprawdzać tutaj czy ta znaleziona przeszkoda jest za nisko (tzn. kulka nie doskoczy z niej) i wtedy nie dodawać wierzchołka?
-                vertex = new Vertex(coll.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (Height / 2), Width, Height, VertexType.UnderCollectible, obstacleUnder);
-                Graph.Vertices.Add(vertex);
+                Vertex VertexUnderCollectible = new Vertex(coll.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (Height / 2), Width, Height, VertexType.UnderCollectible, obstacleUnder);
+                Graph.Vertices.Add(VertexUnderCollectible);
+
+                // krawędź w dół zawsze istnieje
+                Graph.AddEdge(VertexOnCollectible, VertexUnderCollectible);
+
+                // krawedź w górę istnieje, jeśli kulka doskoczy z przeszkody do diamentu
+                int CollectibleDiagonal = 60; // długość przekątnej diamenta (tak na oko)
+                int CircleMaxJumpHeight = 323; // max wysokość na jaką podskoczy kulka
+
+                if ((obstacleUnder.Y - obstacleUnder.Height / 2) - 2 * circleInfo.Radius - CircleMaxJumpHeight <= coll.Y + CollectibleDiagonal / 2)
+                {
+                    Graph.AddEdge(VertexUnderCollectible, VertexOnCollectible);
+                    Graph.Edges[VertexUnderCollectible][VertexOnCollectible].SuggestedMove = Moves.JUMP;
+                }
             }        
         }
 

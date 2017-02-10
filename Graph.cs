@@ -51,11 +51,12 @@ namespace GeometryFriendsAgents
             IEnumerable<Vertex> CollectiblesVertices = Vertices.Where(vertex => vertex.Type == VertexType.OnCollectible);
             List<Vertex> BestPath = new List<Vertex>();
             float BestPathCost = 100000f;
-            List<Vertex> BestPermutation = new List<Vertex>(); // do debuga
+            Vertex StartVertex = Vertices.Where(vertex => vertex.Type == VertexType.OnCircleStart).First();
 
             foreach(List<Vertex> Permutation in GetPermutations(CollectiblesVertices, CollectiblesVertices.Count()))
             {
-                List<Vertex> Path = new List<Vertex>();
+                Permutation.Insert(0, StartVertex);
+                List<Vertex> Path = new List<Vertex>() { StartVertex };
                 float PathCost = 0f;
 
                 int i;
@@ -65,11 +66,11 @@ namespace GeometryFriendsAgents
                     Vertex Target = Permutation[i + 1];
                     var Result = A_star(Start, Target);
 
-                    // nie istnieje ścieżka pomiędzy wierzchołkami
+                    // nie istnieje ścieżka pomiędzy wierzchołkami lub przekroczyliśmy BestPathCost
                     if (Result == null || Result.Item1 + PathCost > BestPathCost)
                         break;
 
-                    Path = (List<Vertex>)Path.Concat(Result.Item2);
+                    Path = (List<Vertex>)Path.Concat(Result.Item2.Skip(1));
                     PathCost += Result.Item1;
                 }
 
@@ -77,7 +78,6 @@ namespace GeometryFriendsAgents
                 {
                     BestPath = Path;
                     BestPathCost = PathCost;
-                    BestPermutation = Permutation;
                 }
             }
 
@@ -128,6 +128,7 @@ namespace GeometryFriendsAgents
             this.VertexFrom = VertexFrom;
             this.VertexTo = VertexTo;
             this.SuggestedMove = Moves.NO_ACTION;
+            this.SuggestedXVelocity = 0f;
         }
     }
 }
