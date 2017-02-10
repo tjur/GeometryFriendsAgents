@@ -375,7 +375,7 @@ namespace GeometryFriendsAgents
 
             if ((DateTime.Now-lastaction).TotalSeconds >= time_step)
             {
-              //  test();
+                test();
                 _CreateOtherVertices(predictor);
                 lastaction = DateTime.Now;        
                 // MCTS_with_target mcts = new MCTS_with_target(possibleMoves, currentAction, CP, NumberOfCollectibles);            
@@ -409,14 +409,14 @@ namespace GeometryFriendsAgents
             g.AddEdge(d, e);
             g.Edges[d][e].Suggested_time = 1;
             g.AddEdge(c, e);
-            g.Edges[c][e].Suggested_time = 1;
+            g.Edges[c][e].Suggested_time = 2.5f;
             g.AddEdge(e, b);
             g.Edges[e][b].Suggested_time = 1;
 
             try
             {
-                g.A_star(a, e);
-               // Debug.WriteLine(x.Item1);
+               var x= g.A_star(a, e);
+                Debug.WriteLine(x.Item1);
             }
             catch(KeyNotFoundException cc)
             {

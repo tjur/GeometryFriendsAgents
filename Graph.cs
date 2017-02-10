@@ -54,17 +54,16 @@ namespace GeometryFriendsAgents
 
             while (openset.Count!=0)
             {
-                Vertex current=f_score.Aggregate((l, r) => l.Value < r.Value ? l : r).Key;
+                //Vertex current = f_score.Aggregate((l, r) => l.Value < r.Value ? l : r).Key;
+                Vertex current = openset.Aggregate((l, r) => f_score[l] < f_score[r] ? l : r);
+
                 if (current == goal)
                     return new Tuple<float, List<Vertex>>(g_score[goal], reconstruct_path(cameFrom,current));
 
                 openset.Remove(current);
                 closedset.Add(current);
 
-                if (!Edges.Keys.Contains(current))
-                    Debug.WriteLine("ERROR - in edges not exist current node");
-
-
+                if (Edges.Keys.Contains(current))
                 foreach (var neighbor in Edges[current].Keys)
                 {
                     if (closedset.Contains(neighbor))
