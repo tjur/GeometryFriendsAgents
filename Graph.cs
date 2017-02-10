@@ -105,7 +105,7 @@ namespace GeometryFriendsAgents
 
         private float heuristic_cost_estimate(Vertex start, Vertex goal)
         {
-            return Math.Abs(start.X - goal.X) / 210 + Math.Abs(start.Y - goal.Y) / 310;
+            return Math.Max(Math.Abs(start.X - goal.X) / 210 , Math.Abs(start.Y - goal.Y) / 310);
         }
 
 
