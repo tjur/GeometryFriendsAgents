@@ -63,7 +63,9 @@ namespace GeometryFriendsAgents
         private Rectangle area;
 
         // Graf utworzony przez GraphCreator
+        private GraphCreator GraphCreator;
         private Graph Graph;
+        private bool _createdOtherVertices = false;
 
         const int max_size = 10000;
 
@@ -276,8 +278,8 @@ namespace GeometryFriendsAgents
             oIList.Add(new ObstacleRepresentation((area.Width + 2 * borderWidth) / 2, area.Height + borderWidth + borderWidth / 2, area.Width, borderWidth));
             var newOIArray = oIList.ToArray();
 
-            GraphCreator graphCreator = new GraphCreator(nI, rI, cI, newOIArray, rPI, cPI, colI, area);
-            Graph = graphCreator.Graph;
+            GraphCreator = new GraphCreator(nI, rI, cI, newOIArray, rPI, cPI, colI, area);
+            Graph = GraphCreator.Graph;
 
             List<DebugInformation> newDebugInfo = new List<DebugInformation>();
             foreach (var vertex in Graph.Vertices)
@@ -359,7 +361,7 @@ namespace GeometryFriendsAgents
                 if (!(DateTime.Now.Second == 59))
                 {
                     // currentAction = UCTSearch(predictor);
-                    HackSimulator(predictor);
+                    _CreateOtherVertices(predictor);
                     lastMoveTime = lastMoveTime + 1;
                 }
                 else
@@ -525,27 +527,25 @@ namespace GeometryFriendsAgents
             return bestNode.Move;
         }
 
-        private void HackSimulator(ActionSimulator simulator)
+        private void _CreateOtherVertices(ActionSimulator simulator)
         {
-            if (simulator == null) return;
+            if (simulator == null || _createdOtherVertices) return;
 
-            var circle = ReflectionUtils.GetAssociatedCircleCharacter(simulator);
+            _createdOtherVertices = true;
 
-            ReflectionUtils.SetSimulator(simulator, new PointF(700, 90), new PointF(0, 0));
+            var fallingDebugInfo = GraphCreator.AddFallingVertices(simulator);
 
-            var body = ReflectionUtils.GetBody(circle);
-            //ReflectionUtils.ListAllProperties(body);
+            List<DebugInformation> verticesDebugInfo = new List<DebugInformation>();
+            foreach (var vertex in Graph.Vertices)
+            {
+                GeometryFriends.XNAStub.Color color = GeometryFriends.XNAStub.Color.Orange;
+                if (vertex.Type == VertexType.Fallen) color = GeometryFriends.XNAStub.Color.CornflowerBlue;
+                if (vertex.Type == VertexType.OnWholeObstacle) color = GeometryFriends.XNAStub.Color.Green;
+                
+                verticesDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), color));
+            }
 
-            Log.LogInformation(simulator.CirclePositionX.ToString());
-            Log.LogInformation(ReflectionUtils.GetBodyLinearVelocity(body).ToString());
-
-            // simulator.AddInstruction(Moves.MOVE_LEFT, 3000);
-            simulator.Update(3);
-
-            Log.LogInformation(simulator.CirclePositionX.ToString());
-            Log.LogInformation(ReflectionUtils.GetBodyLinearVelocity(body).ToString());
-
-            ReflectionUtils.ListAllProperties(body);
+            debugInfo = verticesDebugInfo.Concat(fallingDebugInfo).ToArray();
         }
     }
 }

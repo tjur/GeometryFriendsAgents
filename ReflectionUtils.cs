@@ -18,7 +18,8 @@ namespace GeometryFriendsAgents
         private static FieldInfo _bodyAngularVelocityField;
         private static FieldInfo _bodyPreviousRotationField;
         private static FieldInfo _bodyPreviousAngularVelocityField;
-        private static FieldInfo _bodyLinearVelocity;
+        private static FieldInfo _bodyLinearVelocityField;
+        private static FieldInfo _bodyTorqueField;
 
         private static FieldInfo _vector2X;
         private static FieldInfo _vector2Y;
@@ -37,7 +38,7 @@ namespace GeometryFriendsAgents
 
         public static PointF GetBodyLinearVelocity(object body)
         {
-            var linearVelocity = _bodyLinearVelocity.GetValue(body);
+            var linearVelocity = _bodyLinearVelocityField.GetValue(body);
             return new PointF((float)_vector2X.GetValue(linearVelocity), (float)_vector2Y.GetValue(linearVelocity));
         }
 
@@ -49,7 +50,7 @@ namespace GeometryFriendsAgents
                 Log.LogInformation(string.Format("{0} t: {1} v:{2}", field.Name, field.GetValue(o)?.GetType(), field.GetValue(o)));
         }
 
-        public static void SetSimulator(ActionSimulator simulator, PointF position, PointF linearVelocity)
+        public static void SetSimulator(ActionSimulator simulator, PointF position, PointF linearVelocity, float angularVelocity)
         {
             var circle = GetAssociatedCircleCharacter(simulator);
             var body = GetBody(circle);
@@ -57,12 +58,14 @@ namespace GeometryFriendsAgents
             _SetXYOfVector2(body, "position", position);
             _SetXYOfVector2(body, "linearVelocity", linearVelocity);
             _SetXYOfVector2(body, "acceleration", new PointF(0, 0));
+            _SetXYOfVector2(body, "bodylinearVelocity", linearVelocity);
             _SetXYOfVector2(body, "previousPosition", position);
             _SetXYOfVector2(body, "previousLinearVelocity", linearVelocity);
             _bodyRotationField.SetValue(body, 0);
-            _bodyAngularVelocityField.SetValue(body, 0);
+            _bodyAngularVelocityField.SetValue(body, angularVelocity);
             _bodyPreviousRotationField.SetValue(body, 0);
-            _bodyPreviousAngularVelocityField.SetValue(body, 0);
+            _bodyPreviousAngularVelocityField.SetValue(body, angularVelocity);
+            _bodyTorqueField.SetValue(body, 0);
         }
 
         private static void _SetBodyFields(object associatedCircleCharacter)
@@ -75,7 +78,8 @@ namespace GeometryFriendsAgents
             _bodyAngularVelocityField = bodyType.GetField("angularVelocity", _bindingFlags);
             _bodyPreviousRotationField = bodyType.GetField("previousRotation", _bindingFlags);
             _bodyPreviousAngularVelocityField = bodyType.GetField("previousAngularVelocity", _bindingFlags);
-            _bodyLinearVelocity = bodyType.GetField("linearVelocity", _bindingFlags);
+            _bodyLinearVelocityField = bodyType.GetField("linearVelocity", _bindingFlags);
+            _bodyTorqueField = bodyType.GetField("torque", _bindingFlags);
 
             var vector2Type = associatedCircleCharacter.GetType().GetField("position", _bindingFlags).GetValue(associatedCircleCharacter).GetType();
             _vector2X = vector2Type.GetField("X");
