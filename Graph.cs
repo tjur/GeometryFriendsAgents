@@ -2,6 +2,7 @@
 using GeometryFriends.AI.Perceptions.Information;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -30,12 +31,85 @@ namespace GeometryFriendsAgents
             return Vertices.Where(vertex => vertex.Obstacle.Equals(obstacle)).OrderBy(vertex => vertex.X).ToList();
         }
 
-        public Tuple<float, List<Vertex>> A_star(Vertex start, Vertex target)
-        {
-            //to be continued
 
-            return new Tuple<float, List<Vertex>>(0f, null);
+        public Tuple<float, List<Vertex>> A_star(Vertex start, Vertex goal)
+        {
+            HashSet<Vertex> closedset=new HashSet<Vertex>();
+            HashSet<Vertex> openset=new HashSet<Vertex>();
+            Dictionary<Vertex, float> g_score = new Dictionary<Vertex, float>();
+            Dictionary<Vertex, float> f_score = new Dictionary<Vertex, float>();
+            Dictionary<Vertex, Vertex> cameFrom = new Dictionary<Vertex, Vertex>();
+
+            openset.Add(start);
+
+            foreach (var ver in this.Vertices)
+            {
+                g_score[ver] = float.PositiveInfinity;
+                f_score[ver] = float.PositiveInfinity;
+            }
+
+            
+            g_score[start] = 0;
+            f_score[start] = heuristic_cost_estimate(start, goal);
+
+            while (openset.Count!=0)
+            {
+                Vertex current=f_score.Aggregate((l, r) => l.Value < r.Value ? l : r).Key;
+                if (current == goal)
+                    return new Tuple<float, List<Vertex>>(g_score[goal], reconstruct_path(cameFrom,current));
+
+                openset.Remove(current);
+                closedset.Add(current);
+
+                if (!Edges.Keys.Contains(current))
+                    Debug.WriteLine("ERROR - in edges not exist current node");
+
+
+                foreach (var neighbor in Edges[current].Keys)
+                {
+                    if (closedset.Contains(neighbor))
+                        continue;
+                    float tentotive_g_score = g_score[current] + Edges[current][neighbor].Suggested_time;
+
+                    if (!openset.Contains(neighbor))
+                        openset.Add(neighbor);
+                    else if (tentotive_g_score >= g_score[neighbor])
+                        continue;
+
+
+                    cameFrom[neighbor] = current;
+                    g_score[neighbor] = tentotive_g_score;
+                    f_score[neighbor] = g_score[neighbor] + heuristic_cost_estimate(neighbor, goal);
+                    
+                }
+
+            }
+            
+
+            return null;
         }
+        private List<Vertex> reconstruct_path(Dictionary<Vertex, Vertex> cameFrom, Vertex current)
+        {
+            List < Vertex > total_path = new List<Vertex>();
+            total_path.Add(current);
+
+            while (cameFrom.Keys.Contains(current))
+            {
+                current = cameFrom[current];
+                total_path.Add(current);
+            }
+
+            total_path.Reverse();
+
+            return total_path;
+        }
+
+        private float heuristic_cost_estimate(Vertex start, Vertex goal)
+        {
+            return Math.Abs(start.X - goal.X) / 210 + Math.Abs(start.Y - goal.Y) / 310;
+        }
+
+
 
     }
 
@@ -72,7 +146,7 @@ namespace GeometryFriendsAgents
         Vertex VertexFrom { get; }
         Vertex VertexTo { get; }
 
-        float Suggested_time { get; set; }
+        public float Suggested_time { get; set; }
 
         public Moves SuggestedMove { get; set; }
         public float SuggestedXVelocity { get; set; }
