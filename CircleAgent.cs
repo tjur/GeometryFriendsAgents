@@ -281,17 +281,17 @@ namespace GeometryFriendsAgents
             GraphCreator = new GraphCreator(nI, rI, cI, newOIArray, rPI, cPI, colI, area);
             Graph = GraphCreator.Graph;
 
-            List<DebugInformation> newDebugInfo = new List<DebugInformation>();
-            foreach (var vertex in Graph.Vertices)
-            {
-                // rysowanie wierzchołków
-                newDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.Orange));
+            //List<DebugInformation> newDebugInfo = new List<DebugInformation>();
+            //foreach (var vertex in Graph.Vertices)
+            //{
+            //    // rysowanie wierzchołków
+            //    newDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.Orange));
 
-                // rysowanie krawędzi
-                //foreach (Vertex neighbour in Graph.Edges[vertex].Keys)
-                    //newDebugInfo.Add(DebugInformationFactory.CreateLineDebugInfo(new PointF(vertex.X, vertex.Y), new PointF(neighbour.X, neighbour.Y), GeometryFriends.XNAStub.Color.Black));
-            }
-            debugInfo = newDebugInfo.ToArray();
+            //    // rysowanie krawędzi
+            //    //foreach (Vertex neighbour in Graph.Edges[vertex].Keys)
+            //        //newDebugInfo.Add(DebugInformationFactory.CreateLineDebugInfo(new PointF(vertex.X, vertex.Y), new PointF(neighbour.X, neighbour.Y), GeometryFriends.XNAStub.Color.Black));
+            //}
+            //debugInfo = newDebugInfo.ToArray();
 
             //LevelDrawer.SaveImage(rI, cI, newOIArray, rPI, cPI, colI, Graph.Vertices, area);
         }
@@ -372,13 +372,58 @@ namespace GeometryFriendsAgents
 
         public override void Update(TimeSpan elapsedGameTime)
         {
+
             if ((DateTime.Now-lastaction).TotalSeconds >= time_step)
             {
+                test();
                 _CreateOtherVertices(predictor);
                 lastaction = DateTime.Now;        
                 // MCTS_with_target mcts = new MCTS_with_target(possibleMoves, currentAction, CP, NumberOfCollectibles);            
                 // currentAction = mcts.UCTSearch_with_target(predictor,Graph.Vertices.ElementAt(4),time_step/1000);
             }
+        }
+
+        public void test()
+        {
+            Graph g = new Graph();
+            Vertex a = new Vertex(0, 0, 0, 0, 0);
+            Vertex b = new Vertex(200, 100, 0, 0, 0);
+            Vertex c = new Vertex(100, 200, 0, 0, 0);
+            Vertex d = new Vertex(200, 400, 0, 0, 0);
+            Vertex e = new Vertex(300, 100, 0, 0, 0);
+
+            g.Vertices.Add(a);
+            g.Vertices.Add(b);
+            g.Vertices.Add(c);
+            g.Vertices.Add(d);
+            g.Vertices.Add(e);
+
+            g.AddEdge(a, b);
+            g.Edges[a][b].SuggestedTime=1;
+            g.AddEdge(a, c);
+            g.Edges[a][c].SuggestedTime = 1;
+            g.AddEdge(c, b);
+            g.Edges[c][b].SuggestedTime = 1;
+            g.AddEdge(c, d);
+            g.Edges[c][d].SuggestedTime = 1;
+            g.AddEdge(d, e);
+            g.Edges[d][e].SuggestedTime = 1;
+            g.AddEdge(c, e);
+            g.Edges[c][e].SuggestedTime = 2.5f;
+            g.AddEdge(e, b);
+            g.Edges[e][b].SuggestedTime = 1;
+
+            try
+            {
+               var x= g.A_star(a, e);
+                Debug.WriteLine(x.Item1);
+            }
+            catch(KeyNotFoundException cc)
+            {
+                Debug.WriteLine(cc.ToString());
+                Debug.WriteLine("");
+            }
+
         }
 
         //implements abstract circle interface: signals the agent the end of the current level
@@ -542,9 +587,10 @@ namespace GeometryFriendsAgents
 
             foreach (var vertex in Graph.Vertices)
             {
-                GeometryFriends.XNAStub.Color color = GeometryFriends.XNAStub.Color.Orange;
-                if (vertex.Type == VertexType.FallenFromLeft || vertex.Type == VertexType.FallenFromRight) color = GeometryFriends.XNAStub.Color.CornflowerBlue;
-                if (vertex.Type == VertexType.Jumping) color = GeometryFriends.XNAStub.Color.Cyan;
+                const float alpha = 0.33f;
+                GeometryFriends.XNAStub.Color color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.Orange, alpha);
+                if (vertex.Type == VertexType.FallenFromLeft || vertex.Type == VertexType.FallenFromRight) color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.CornflowerBlue, alpha);
+                if (vertex.Type == VertexType.Jumping) color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.Cyan, alpha);
 
                 foreach (Vertex neighbour in Graph.Edges[vertex].Keys)
                     edgesDebugInfo.Add(DebugInformationFactory.CreateLineDebugInfo(new PointF(vertex.X, vertex.Y), new PointF(neighbour.X, neighbour.Y), GeometryFriends.XNAStub.Color.Black));

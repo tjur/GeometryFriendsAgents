@@ -92,10 +92,17 @@ namespace GeometryFriendsAgents
                         const float IS_OKAY = 5;
                         if (obstacleUnder.Y - obstacleUnder.Height / 2 - (fallenVertex.Y + fallenVertex.Height / 2) <= IS_OKAY)
                         {
-                            Graph.AddEdge(vertex, fallenVertex);
-                            var edge = Graph.Edges[vertex][fallenVertex];
-                            edge.SuggestedMove = jump ? Moves.JUMP : Moves.NO_ACTION;
-                            edge.SuggestedXVelocity = linearVelocity.X;
+                            var verticesToAddEdges = tuple.Item3;
+                            verticesToAddEdges.Add(Tuple.Create(fallenVertex, simulator.SimulatedTime));
+
+                            foreach (var pair in verticesToAddEdges)
+                            {
+                                Graph.AddEdge(vertex, pair.Item1);
+                                var edge = Graph.Edges[vertex][pair.Item1];
+                                edge.SuggestedMove = jump ? Moves.JUMP : Moves.NO_ACTION;
+                                edge.SuggestedXVelocity = linearVelocity.X;
+                                edge.SuggestedTime = simulator.SimulatedTime;
+                            }
 
                             fallenVertex.Obstacle = obstacleUnder;
                             fallenVertices.Add(fallenVertex);
@@ -167,10 +174,17 @@ namespace GeometryFriendsAgents
                         else
                             jumpingVertices.Add(jumpingVertex);
 
-                        Graph.AddEdge(vertex, jumpingVertex);
-                        var edge = Graph.Edges[vertex][jumpingVertex];
-                        edge.SuggestedMove = Moves.JUMP;
-                        edge.SuggestedXVelocity = linearVelocity.X;
+                        var verticesToAddEdges = tuple.Item3;
+                        verticesToAddEdges.Add(Tuple.Create(jumpingVertex, simulator.SimulatedTime));
+
+                        foreach (var pair in verticesToAddEdges)
+                        {
+                            Graph.AddEdge(vertex, pair.Item1);
+                            var edge = Graph.Edges[vertex][pair.Item1];
+                            edge.SuggestedMove = Moves.JUMP;
+                            edge.SuggestedXVelocity = linearVelocity.X;
+                            edge.SuggestedTime = simulator.SimulatedTime;
+                        }
 
                         debugInformations.AddRange(tuple.Item2);
                     }
@@ -181,13 +195,34 @@ namespace GeometryFriendsAgents
             return debugInformations;
         }
 
-        private Tuple<Vertex, List<DebugInformation>> _CreateFallenVertex(ActionSimulator simulator, PointF position, PointF linearVelocity, float angularVelocity, bool jump)
+        private Tuple<Vertex, List<DebugInformation>, List<Tuple<Vertex, float>>> _CreateFallenVertex(ActionSimulator simulator, PointF position, PointF linearVelocity, float angularVelocity, bool jump)
         {
             const int vertexWidth = 50;
             const int vertexHeight = 40;
 
+            List<Tuple<Vertex, float>> collectibleVerticesCaught = new List<Tuple<Vertex, float>>();
+
             simulator.ResetSimulator();
             simulator.DebugInfo = true;
+            simulator.SimulatorCollectedEvent += (object sender, CollectibleRepresentation collectibleCaught) =>
+            {
+                Vertex collectibleVertex = null;
+                double smallestDistance = 999999;
+
+                foreach (Vertex vertex in Graph.Vertices.Where(v => v.Type == VertexType.OnCollectible))
+                {
+                    double distance = Math.Sqrt(Math.Pow(collectibleCaught.X - vertex.X, 2) + Math.Pow(collectibleCaught.Y - vertex.Y, 2));
+
+                    if (distance < smallestDistance)
+                    {
+                        smallestDistance = distance;
+                        collectibleVertex = vertex;
+                    }
+                }
+
+                collectibleVerticesCaught.Add(Tuple.Create(collectibleVertex, simulator.SimulatedTime));
+            };
+
             // simulator.SimulatorStep = 0.01f;
 
             ReflectionUtils.SetSimulator(simulator, position, linearVelocity, angularVelocity);
@@ -204,7 +239,7 @@ namespace GeometryFriendsAgents
 
             VertexType vertexType = simulator.CircleVelocityX > 0 ? VertexType.FallenFromLeft : VertexType.FallenFromRight;
             PointF vertexPosition = new PointF(simulator.CirclePositionX, simulator.CirclePositionY + simulator.CircleVelocityRadius - vertexHeight / 2);
-            return Tuple.Create(new Vertex(vertexPosition.X, vertexPosition.Y, vertexWidth, vertexHeight, vertexType), simulator.SimulationHistoryDebugInformation);
+            return Tuple.Create(new Vertex(vertexPosition.X, vertexPosition.Y, vertexWidth, vertexHeight, vertexType), simulator.SimulationHistoryDebugInformation, collectibleVerticesCaught);
         }
 
         private ObstacleRepresentation GetClosestObstacleUnder(Vertex vertex)
@@ -416,11 +451,18 @@ namespace GeometryFriendsAgents
 
                     if (!obstacleBetween)
                     {
+                        float suggestedTime = (float)(vertexLeft.X - vertexRight.X) / 200.0f + 1.0f;
+
                         Graph.AddEdge(vertexLeft, vertexRight);
-                        Graph.Edges[vertexLeft][vertexRight].SuggestedMove = Moves.ROLL_RIGHT;
+                        Edge edge = Graph.Edges[vertexLeft][vertexRight];
+                        edge.SuggestedMove = Moves.ROLL_RIGHT;
+                        edge.SuggestedTime = suggestedTime;
+                       
 
                         Graph.AddEdge(vertexRight, vertexLeft);
-                        Graph.Edges[vertexRight][vertexLeft].SuggestedMove = Moves.MOVE_LEFT;
+                        edge = Graph.Edges[vertexRight][vertexLeft];
+                        edge.SuggestedMove = Moves.MOVE_LEFT;
+                        edge.SuggestedTime = suggestedTime;
                     }
                 }
             }
