@@ -31,7 +31,7 @@ namespace GeometryFriendsAgents
     }
 
     // typy wierzchołków
-   public enum VertexType { OnCircleStart, OnRectangleStart, OnObstacleLeft, OnObstacleRight, OnWholeObstacle, OnCollectible, UnderCollectible };
+   public enum VertexType { OnCircleStart, OnRectangleStart, OnObstacleLeft, OnObstacleRight, OnWholeObstacle, OnCollectible, UnderCollectible, Fallen };
 
     // wierzchołek grafu, będący tak naprawdę prostokątem na planszy
    public class Vertex
