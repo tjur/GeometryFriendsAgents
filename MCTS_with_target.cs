@@ -162,9 +162,9 @@ namespace GeometryFriendsAgents
 
         private double DefaultPolicy_with_target(ActionSimulator simulator, MCTSTreeNode node, Vertex target, float move_time_ms)
         {
-            float SECONDS_OF_SIMULATION =(float) Math.Sqrt(((target.X-simulator.CirclePositionX)* (target.X - simulator.CirclePositionX)+ (target.Y - simulator.CirclePositionY)* (target.Y - simulator.CirclePositionY)))/200+1;
+            float SECONDS_OF_SIMULATION =(float) Math.Sqrt(((target.X-simulator.CirclePositionX)* (target.X - simulator.CirclePositionX)+ (target.Y - simulator.CirclePositionY)* (target.Y - simulator.CirclePositionY)))/200+3;
             float step = 0.1f;
-            float CircleSize = 20;
+            float CircleSize = 40;
             simulator.AddInstruction(node.Move, move_time_ms);
 
             for (int i = 0; i < SECONDS_OF_SIMULATION; i++)

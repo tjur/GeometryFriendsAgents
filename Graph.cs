@@ -29,6 +29,14 @@ namespace GeometryFriendsAgents
         {
             return Vertices.Where(vertex => vertex.Obstacle.Equals(obstacle)).OrderBy(vertex => vertex.X).ToList();
         }
+
+        public Tuple<float, List<Vertex>> A_star(Vertex start, Vertex target)
+        {
+            //to be continued
+
+            return new Tuple<float, List<Vertex>>(0f, null);
+        }
+
     }
 
     // typy wierzchołków
@@ -63,6 +71,8 @@ namespace GeometryFriendsAgents
     {
         Vertex VertexFrom { get; }
         Vertex VertexTo { get; }
+
+        float Suggested_time { get; set; }
 
         public Moves SuggestedMove { get; set; }
         public float SuggestedXVelocity { get; set; }
