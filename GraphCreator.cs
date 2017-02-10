@@ -97,8 +97,7 @@ namespace GeometryFriendsAgents
 
                             foreach (var pair in verticesToAddEdges)
                             {
-                                Graph.AddEdge(vertex, pair.Item1);
-                                var edge = Graph.Edges[vertex][pair.Item1];
+                                var edge = Graph.AddEdge(vertex, pair.Item1);
                                 edge.SuggestedMove = jump ? Moves.JUMP : Moves.NO_ACTION;
                                 edge.SuggestedXVelocity = linearVelocity.X;
                                 edge.SuggestedTime = simulator.SimulatedTime;
@@ -267,7 +266,7 @@ namespace GeometryFriendsAgents
             float Height = 40;
 
             // gdy aktualna mapa zawiera kółko
-            if (!(circleInfo.X == -1000 && circleInfo.Y == -1000))
+            if (!(circleInfo.X < 0 || circleInfo.Y < 0))
             {
                 // znajdujemy przeszkodę na której leży kółko
                 var obstacleUnder = AllObstacles
@@ -279,7 +278,7 @@ namespace GeometryFriendsAgents
             }
 
             // gdy aktualna mapa zawiera prostokąt
-            if (!(rectangleInfo.X == -1000 && rectangleInfo.Y == -1000))
+            if (!(rectangleInfo.X < 0 || rectangleInfo.Y < 0))
             {
                 // znajdujemy przeszkodę na której leży prostokąt
                 var obstacleUnder = AllObstacles
@@ -398,7 +397,8 @@ namespace GeometryFriendsAgents
                 Graph.Vertices.Add(VertexUnderCollectible);
 
                 // krawędź w dół zawsze istnieje
-                Graph.AddEdge(VertexOnCollectible, VertexUnderCollectible);
+                var edge = Graph.AddEdge(VertexOnCollectible, VertexUnderCollectible);
+                edge.SuggestedTime = (VertexUnderCollectible.Y - VertexOnCollectible.Y) / 310.0f;
 
                 // krawedź w górę istnieje, jeśli kulka doskoczy z przeszkody do diamentu
                 int CollectibleDiagonal = 60; // długość przekątnej diamenta (tak na oko)
@@ -406,8 +406,9 @@ namespace GeometryFriendsAgents
 
                 if ((obstacleUnder.Y - obstacleUnder.Height / 2) - 2 * circleInfo.Radius - CircleMaxJumpHeight <= coll.Y + CollectibleDiagonal / 2)
                 {
-                    Graph.AddEdge(VertexUnderCollectible, VertexOnCollectible);
-                    Graph.Edges[VertexUnderCollectible][VertexOnCollectible].SuggestedMove = Moves.JUMP;
+                    edge = Graph.AddEdge(VertexUnderCollectible, VertexOnCollectible);
+                    edge.SuggestedMove = Moves.JUMP;
+                    edge.SuggestedTime = (VertexUnderCollectible.Y - VertexOnCollectible.Y) / 310.0f;
                 }
             }        
         }
@@ -451,7 +452,7 @@ namespace GeometryFriendsAgents
 
                     if (!obstacleBetween)
                     {
-                        float suggestedTime = (float)(vertexLeft.X - vertexRight.X) / 200.0f + 1.0f;
+                        float suggestedTime = (vertexRight.X - vertexLeft.X) / 200.0f + 1.0f;
 
                         Graph.AddEdge(vertexLeft, vertexRight);
                         Edge edge = Graph.Edges[vertexLeft][vertexRight];
