@@ -1,4 +1,5 @@
-﻿using GeometryFriends.AI.Perceptions.Information;
+﻿using GeometryFriends.AI;
+using GeometryFriends.AI.Perceptions.Information;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,17 +10,17 @@ namespace GeometryFriendsAgents
     class Graph
     {
         public List<Vertex> Vertices { get; }
-        public Dictionary<Vertex, List<Vertex>> Neighbours;
+        public Dictionary<Vertex, Dictionary<Vertex, Edge>> Edges;
 
         public Graph()
         {
             Vertices = new List<Vertex>();
-            Neighbours = new Dictionary<Vertex, List<Vertex>>();
+            Edges = new Dictionary<Vertex, Dictionary<Vertex, Edge>>();
         }
 
-        public void AddEdge(Vertex vertexFrom, Vertex vertexTo)
+        public void AddEdge(Vertex VertexFrom, Vertex VertexTo)
         {
-            Neighbours[vertexFrom].Add(vertexTo);
+            Edges[VertexFrom][VertexTo] = new Edge(VertexFrom, VertexTo);
         }
 
         // dla danej przeszkody zwraca wszystkie wierzchołki, które się na niej znajdują (posortowane rosnąco po X)
@@ -54,6 +55,21 @@ namespace GeometryFriendsAgents
             this.Height = Height;
             this.Type = Type;
             this.Obstacle = Obstacle;
+        }
+    }
+
+    public class Edge
+    {
+        Vertex VertexFrom { get; }
+        Vertex VertexTo { get; }
+
+        public Moves SuggestedMove { get; set; }
+
+        public Edge(Vertex VertexFrom, Vertex VertexTo)
+        {
+            this.VertexFrom = VertexFrom;
+            this.VertexTo = VertexTo;
+            this.SuggestedMove = Moves.NO_ACTION;
         }
     }
 }

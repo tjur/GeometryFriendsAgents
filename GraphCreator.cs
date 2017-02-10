@@ -1,4 +1,5 @@
-﻿using GeometryFriends.AI.Perceptions.Information;
+﻿using GeometryFriends.AI;
+using GeometryFriends.AI.Perceptions.Information;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -20,17 +21,7 @@ namespace GeometryFriendsAgents
 
         private List<ObstacleRepresentation> AllObstacles;
 
-        private Graph graph;
-        public Graph Graph
-        {
-            get
-            {
-                if (graph == null)
-                    CreateGraph();
-
-                return graph;
-            }
-        }
+        public Graph Graph { get; private set; }
 
         public GraphCreator(
                         CountInformation nI,
@@ -51,11 +42,13 @@ namespace GeometryFriendsAgents
             collectiblesInfo = colI;
             this.area = area;
             AllObstacles = obstaclesInfo.Concat(circlePlatformsInfo).Concat(rectanglePlatformsInfo).ToList();
+
+            CreateGraph();
         }
 
         private void CreateGraph()
         {
-            graph = new Graph();
+            Graph = new Graph();
 
             CreateOnStartVertex();
             CreateObstacleStartEndVertices();
@@ -79,7 +72,7 @@ namespace GeometryFriendsAgents
                                             .Aggregate((obst1, obst2) => (obst1.Y - circleInfo.Y) < (obst2.Y - circleInfo.Y) ? obst1 : obst2);
 
                 Vertex vertex = new Vertex(circleInfo.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (Height / 2), Width, Height, VertexType.OnCircleStart, obstacleUnder);
-                graph.Vertices.Add(vertex);
+                Graph.Vertices.Add(vertex);
             }
 
             // gdy aktualna mapa zawiera prostokąt
@@ -91,7 +84,7 @@ namespace GeometryFriendsAgents
                                             .Aggregate((obst1, obst2) => (obst1.Y - rectangleInfo.Y) < (obst2.Y - rectangleInfo.Y) ? obst1 : obst2);
 
                 Vertex vertex = new Vertex(rectangleInfo.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (Height / 2), Width, Height, VertexType.OnRectangleStart, obstacleUnder);
-                graph.Vertices.Add(vertex);
+                Graph.Vertices.Add(vertex);
             }
         }
 
@@ -124,17 +117,17 @@ namespace GeometryFriendsAgents
             {
                 vertex = new Vertex(obstacle.X, upCornerY - (Height / 2), obstacle.Width, Height, VertexType.OnWholeObstacle, obstacle);
                 if (VertexNotCollide(vertex))
-                    graph.Vertices.Add(vertex);
+                    Graph.Vertices.Add(vertex);
 
                 return;
             }
 
             vertex = new Vertex(leftTopCornerX + (Width / 2), upCornerY - (Height / 2), Width, Height, VertexType.OnObstacleLeft, obstacle);
             if (VertexNotCollide(vertex))
-                graph.Vertices.Add(vertex);
+                Graph.Vertices.Add(vertex);
             vertex = new Vertex(rightTopCornerX - (Width / 2), upCornerY - (Height / 2), Width, Height, VertexType.OnObstacleRight, obstacle);
             if (VertexNotCollide(vertex))
-                graph.Vertices.Add(vertex);
+                Graph.Vertices.Add(vertex);
         }
 
         // sprawdza czy podany wierzchołek nie nachodzi na jakąś przeszkodę lub nie wychodzi poza planszę
@@ -192,7 +185,7 @@ namespace GeometryFriendsAgents
 
                 // na diamencie
                 vertex = new Vertex(coll.X, coll.Y, R, R, VertexType.OnCollectible, null);
-                graph.Vertices.Add(vertex);
+                Graph.Vertices.Add(vertex);
 
                 // pod diamentem
                 // znajdujemy najbliższą przeszkodę pod diamentem i tworzymy tam wierzchołek
@@ -202,14 +195,14 @@ namespace GeometryFriendsAgents
 
                 // czy sprawdzać tutaj czy ta znaleziona przeszkoda jest za nisko (tzn. kulka nie doskoczy z niej) i wtedy nie dodawać wierzchołka?
                 vertex = new Vertex(coll.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (Height / 2), Width, Height, VertexType.UnderCollectible, obstacleUnder);
-                graph.Vertices.Add(vertex);
+                Graph.Vertices.Add(vertex);
             }        
         }
 
         private void CreateEdges()
         {
-            foreach (var vertex in graph.Vertices)
-                graph.Neighbours[vertex] = new List<Vertex>();
+            foreach (var vertex in Graph.Vertices)
+                Graph.Edges[vertex] = new Dictionary<Vertex, Edge>();
 
             CreateSameObstacleEdges();
         }
@@ -219,7 +212,7 @@ namespace GeometryFriendsAgents
         {
             foreach (var obstacle in AllObstacles)
             {
-                List<Vertex> VerticesOnObstacle = graph.GetAllVerticesOnObstacle(obstacle);
+                List<Vertex> VerticesOnObstacle = Graph.GetAllVerticesOnObstacle(obstacle);
                 for (int i = 0; i < VerticesOnObstacle.Count - 1; i++)
                 {
                     Vertex vertexLeft = VerticesOnObstacle[i];
@@ -244,8 +237,11 @@ namespace GeometryFriendsAgents
 
                     if (!obstacleBetween)
                     {
-                        graph.AddEdge(vertexLeft, vertexRight);
-                        graph.AddEdge(vertexRight, vertexLeft);
+                        Graph.AddEdge(vertexLeft, vertexRight);
+                        Graph.Edges[vertexLeft][vertexRight].SuggestedMove = Moves.ROLL_RIGHT;
+
+                        Graph.AddEdge(vertexRight, vertexLeft);
+                        Graph.Edges[vertexRight][vertexLeft].SuggestedMove = Moves.MOVE_LEFT;
                     }
                 }
             }

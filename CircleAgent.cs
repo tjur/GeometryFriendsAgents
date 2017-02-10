@@ -286,7 +286,7 @@ namespace GeometryFriendsAgents
                 newDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.Orange));
 
                 // rysowanie krawędzi
-                //foreach (var neighbour in Graph.Neighbours[vertex])
+                //foreach (Vertex neighbour in Graph.Edges[vertex].Keys)
                     //newDebugInfo.Add(DebugInformationFactory.CreateLineDebugInfo(new PointF(vertex.X, vertex.Y), new PointF(neighbour.X, neighbour.Y), GeometryFriends.XNAStub.Color.Black));
             }
             debugInfo = newDebugInfo.ToArray();
