@@ -20,6 +20,7 @@ namespace GeometryFriendsAgents
 
         public void AddEdge(Vertex VertexFrom, Vertex VertexTo)
         {
+            if (!Edges.ContainsKey(VertexFrom)) Edges.Add(VertexFrom, new Dictionary<Vertex, Edge>());
             Edges[VertexFrom][VertexTo] = new Edge(VertexFrom, VertexTo);
         }
 
@@ -31,7 +32,7 @@ namespace GeometryFriendsAgents
     }
 
     // typy wierzchołków
-   public enum VertexType { OnCircleStart, OnRectangleStart, OnObstacleLeft, OnObstacleRight, OnWholeObstacle, OnCollectible, UnderCollectible, Fallen };
+   public enum VertexType { OnCircleStart, OnRectangleStart, OnObstacleLeft, OnObstacleRight, OnWholeObstacle, OnCollectible, UnderCollectible, FallenFromLeft, FallenFromRight, Jumping };
 
     // wierzchołek grafu, będący tak naprawdę prostokątem na planszy
    public class Vertex
@@ -43,9 +44,9 @@ namespace GeometryFriendsAgents
         public float Height { get; }
 
         // przeszkoda na której znajduje się wierzchołek lub null (dla typu OnCollectible)
-        public ObstacleRepresentation? Obstacle { get; }
+        public ObstacleRepresentation? Obstacle { get; set; }
 
-        public VertexType Type { get; }
+        public VertexType Type { get; set; }
 
         public Vertex(float X, float Y, float Width, float Height, VertexType Type, ObstacleRepresentation? Obstacle = null)
         {
@@ -64,6 +65,7 @@ namespace GeometryFriendsAgents
         Vertex VertexTo { get; }
 
         public Moves SuggestedMove { get; set; }
+        public float SuggestedXVelocity { get; set; }
 
         public Edge(Vertex VertexFrom, Vertex VertexTo)
         {

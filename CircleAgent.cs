@@ -374,10 +374,10 @@ namespace GeometryFriendsAgents
         {
             if ((DateTime.Now-lastaction).TotalSeconds >= time_step)
             {
+                _CreateOtherVertices(predictor);
                 lastaction = DateTime.Now;        
-                MCTS_with_target mcts = new MCTS_with_target(possibleMoves, currentAction, CP, NumberOfCollectibles);            
-                currentAction = mcts.UCTSearch_with_target(predictor,Graph.Vertices.ElementAt(4),time_step/1000);
-
+                // MCTS_with_target mcts = new MCTS_with_target(possibleMoves, currentAction, CP, NumberOfCollectibles);            
+                // currentAction = mcts.UCTSearch_with_target(predictor,Graph.Vertices.ElementAt(4),time_step/1000);
             }
         }
 
@@ -533,19 +533,32 @@ namespace GeometryFriendsAgents
 
             _createdOtherVertices = true;
 
-            var fallingDebugInfo = GraphCreator.AddFallingVertices(simulator);
-
+            List<DebugInformation> fallingDebugInfo = GraphCreator.AddFallingVertices(simulator);
+            List<DebugInformation> jumpingDebugInfo = GraphCreator.AddJumpingVertices(simulator);
             List<DebugInformation> verticesDebugInfo = new List<DebugInformation>();
+            List<DebugInformation> edgesDebugInfo = new List<DebugInformation>();
+
+            GraphCreator.CreateEdges();
+
             foreach (var vertex in Graph.Vertices)
             {
                 GeometryFriends.XNAStub.Color color = GeometryFriends.XNAStub.Color.Orange;
-                if (vertex.Type == VertexType.Fallen) color = GeometryFriends.XNAStub.Color.CornflowerBlue;
-                if (vertex.Type == VertexType.OnWholeObstacle) color = GeometryFriends.XNAStub.Color.Green;
-                
+                if (vertex.Type == VertexType.FallenFromLeft || vertex.Type == VertexType.FallenFromRight) color = GeometryFriends.XNAStub.Color.CornflowerBlue;
+                if (vertex.Type == VertexType.Jumping) color = GeometryFriends.XNAStub.Color.Cyan;
+
+                foreach (Vertex neighbour in Graph.Edges[vertex].Keys)
+                    edgesDebugInfo.Add(DebugInformationFactory.CreateLineDebugInfo(new PointF(vertex.X, vertex.Y), new PointF(neighbour.X, neighbour.Y), GeometryFriends.XNAStub.Color.Black));
+
                 verticesDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), color));
             }
 
-            debugInfo = verticesDebugInfo.Concat(fallingDebugInfo).ToArray();
+            List<DebugInformation> newDebugInfo = new List<DebugInformation>();
+            newDebugInfo.AddRange(verticesDebugInfo);
+            //newDebugInfo.AddRange(fallingDebugInfo);
+            //newDebugInfo.AddRange(jumpingDebugInfo);
+            newDebugInfo.AddRange(edgesDebugInfo);
+
+            debugInfo = newDebugInfo.ToArray();
         }
     }
 }
