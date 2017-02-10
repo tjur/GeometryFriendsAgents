@@ -281,17 +281,17 @@ namespace GeometryFriendsAgents
             GraphCreator = new GraphCreator(nI, rI, cI, newOIArray, rPI, cPI, colI, area);
             Graph = GraphCreator.Graph;
 
-            List<DebugInformation> newDebugInfo = new List<DebugInformation>();
-            foreach (var vertex in Graph.Vertices)
-            {
-                // rysowanie wierzchołków
-                newDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.Orange));
+            //List<DebugInformation> newDebugInfo = new List<DebugInformation>();
+            //foreach (var vertex in Graph.Vertices)
+            //{
+            //    // rysowanie wierzchołków
+            //    newDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.Orange));
 
-                // rysowanie krawędzi
-                //foreach (Vertex neighbour in Graph.Edges[vertex].Keys)
-                    //newDebugInfo.Add(DebugInformationFactory.CreateLineDebugInfo(new PointF(vertex.X, vertex.Y), new PointF(neighbour.X, neighbour.Y), GeometryFriends.XNAStub.Color.Black));
-            }
-            debugInfo = newDebugInfo.ToArray();
+            //    // rysowanie krawędzi
+            //    //foreach (Vertex neighbour in Graph.Edges[vertex].Keys)
+            //        //newDebugInfo.Add(DebugInformationFactory.CreateLineDebugInfo(new PointF(vertex.X, vertex.Y), new PointF(neighbour.X, neighbour.Y), GeometryFriends.XNAStub.Color.Black));
+            //}
+            //debugInfo = newDebugInfo.ToArray();
 
             //LevelDrawer.SaveImage(rI, cI, newOIArray, rPI, cPI, colI, Graph.Vertices, area);
         }
@@ -542,9 +542,10 @@ namespace GeometryFriendsAgents
 
             foreach (var vertex in Graph.Vertices)
             {
-                GeometryFriends.XNAStub.Color color = GeometryFriends.XNAStub.Color.Orange;
-                if (vertex.Type == VertexType.FallenFromLeft || vertex.Type == VertexType.FallenFromRight) color = GeometryFriends.XNAStub.Color.CornflowerBlue;
-                if (vertex.Type == VertexType.Jumping) color = GeometryFriends.XNAStub.Color.Cyan;
+                const float alpha = 0.33f;
+                GeometryFriends.XNAStub.Color color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.Orange, alpha);
+                if (vertex.Type == VertexType.FallenFromLeft || vertex.Type == VertexType.FallenFromRight) color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.CornflowerBlue, alpha);
+                if (vertex.Type == VertexType.Jumping) color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.Cyan, alpha);
 
                 foreach (Vertex neighbour in Graph.Edges[vertex].Keys)
                     edgesDebugInfo.Add(DebugInformationFactory.CreateLineDebugInfo(new PointF(vertex.X, vertex.Y), new PointF(neighbour.X, neighbour.Y), GeometryFriends.XNAStub.Color.Black));

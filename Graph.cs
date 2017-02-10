@@ -72,8 +72,7 @@ namespace GeometryFriendsAgents
         Vertex VertexFrom { get; }
         Vertex VertexTo { get; }
 
-        float Suggested_time { get; set; }
-
+        public float SuggestedTime { get; set; }
         public Moves SuggestedMove { get; set; }
         public float SuggestedXVelocity { get; set; }
 
