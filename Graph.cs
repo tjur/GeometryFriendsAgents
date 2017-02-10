@@ -37,6 +37,52 @@ namespace GeometryFriendsAgents
             return new Tuple<float, List<Vertex>>(0f, null);
         }
 
+        static IEnumerable<IEnumerable<T>> GetPermutations<T>(IEnumerable<T> list, int length)
+        {
+            if (length == 1)
+                return list.Select(t => new T[] { t });
+
+            return GetPermutations(list, length - 1)
+                                    .SelectMany(t => list.Where(o => !t.Contains(o)), (t1, t2) => t1.Concat(new T[] { t2 }));
+        }
+
+        public List<Vertex> FindBestPath()
+        {
+            IEnumerable<Vertex> CollectiblesVertices = Vertices.Where(vertex => vertex.Type == VertexType.OnCollectible);
+            List<Vertex> BestPath = new List<Vertex>();
+            float BestPathCost = 100000f;
+            List<Vertex> BestPermutation = new List<Vertex>(); // do debuga
+
+            foreach(List<Vertex> Permutation in GetPermutations(CollectiblesVertices, CollectiblesVertices.Count()))
+            {
+                List<Vertex> Path = new List<Vertex>();
+                float PathCost = 0f;
+
+                int i;
+                for (i = 0; i < Permutation.Count - 1; i++)
+                {
+                    Vertex Start = Permutation[i];
+                    Vertex Target = Permutation[i + 1];
+                    var Result = A_star(Start, Target);
+
+                    // nie istnieje ścieżka pomiędzy wierzchołkami
+                    if (Result == null || Result.Item1 + PathCost > BestPathCost)
+                        break;
+
+                    Path = (List<Vertex>)Path.Concat(Result.Item2);
+                    PathCost += Result.Item1;
+                }
+
+                if (i == Permutation.Count - 1 && PathCost < BestPathCost)
+                {
+                    BestPath = Path;
+                    BestPathCost = PathCost;
+                    BestPermutation = Permutation;
+                }
+            }
+
+            return BestPath;
+        }
     }
 
     // typy wierzchołków
