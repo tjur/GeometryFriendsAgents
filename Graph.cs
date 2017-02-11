@@ -19,10 +19,10 @@ namespace GeometryFriendsAgents
             Edges = new Dictionary<Vertex, Dictionary<Vertex, Edge>>();
         }
 
-        public void AddEdge(Vertex VertexFrom, Vertex VertexTo)
+        public Edge AddEdge(Vertex VertexFrom, Vertex VertexTo)
         {
             if (!Edges.ContainsKey(VertexFrom)) Edges.Add(VertexFrom, new Dictionary<Vertex, Edge>());
-            Edges[VertexFrom][VertexTo] = new Edge(VertexFrom, VertexTo);
+            return Edges[VertexFrom][VertexTo] = new Edge(VertexFrom, VertexTo);
         }
 
         // dla danej przeszkody zwraca wszystkie wierzchołki, które się na niej znajdują (posortowane rosnąco po X)
@@ -85,7 +85,6 @@ namespace GeometryFriendsAgents
 
             while (openset.Count!=0)
             {
-                //Vertex current = f_score.Aggregate((l, r) => l.Value < r.Value ? l : r).Key;
                 Vertex current = openset.Aggregate((l, r) => f_score[l] < f_score[r] ? l : r);
 
                 if (current == goal)
@@ -177,8 +176,9 @@ namespace GeometryFriendsAgents
             float BestPathCost = 100000f;
             Vertex StartVertex = Vertices.Where(vertex => vertex.Type == VertexType.OnCircleStart).First();
 
-            foreach(List<Vertex> Permutation in GetPermutations(CollectiblesVertices, CollectiblesVertices.Count()))
+            foreach(IEnumerable<Vertex> PermutationEnumerable in GetPermutations(CollectiblesVertices, CollectiblesVertices.Count()))
             {
+                List<Vertex> Permutation = PermutationEnumerable.ToList();
                 Permutation.Insert(0, StartVertex);
                 List<Vertex> Path = new List<Vertex>() { StartVertex };
                 float PathCost = 0f;
@@ -190,11 +190,10 @@ namespace GeometryFriendsAgents
                     Vertex Target = Permutation[i + 1];
                     var Result = A_star(Start, Target);
 
-                    // nie istnieje ścieżka pomiędzy wierzchołkami lub przekroczyliśmy BestPathCost
                     if (Result == null || Result.Item1 + PathCost > BestPathCost)
                         break;
 
-                    Path = (List<Vertex>)Path.Concat(Result.Item2.Skip(1));
+                    Path = Path.Concat(Result.Item2.Skip(1)).ToList();
                     PathCost += Result.Item1;
                 }
 

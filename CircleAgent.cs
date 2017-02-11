@@ -375,8 +375,10 @@ namespace GeometryFriendsAgents
 
             if ((DateTime.Now-lastaction).TotalSeconds >= time_step)
             {
+
              //   Graph.Fun();
              //   test();
+                // test();
                 _CreateOtherVertices(predictor);
                 lastaction = DateTime.Now;        
                 // MCTS_with_target mcts = new MCTS_with_target(possibleMoves, currentAction, CP, NumberOfCollectibles);            
@@ -599,11 +601,26 @@ namespace GeometryFriendsAgents
                 verticesDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), color));
             }
 
+            List<Vertex> bestPath = Graph.FindBestPath();
+            List<DebugInformation> bestPathDebugInfo = new List<DebugInformation>();
+            Log.LogInformation("vertices in bestPath: " + bestPath.Count);
+
+            foreach (var vertex in bestPath)
+            {
+                bestPathDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.Red));
+            }
+
+            for (int i = 0; i < bestPath.Count - 1; i++)
+            {
+                bestPathDebugInfo.Add(DebugInformationFactory.CreateLineDebugInfo(new PointF(bestPath[i].X, bestPath[i].Y), new PointF(bestPath[i + 1].X, bestPath[i + 1].Y), GeometryFriends.XNAStub.Color.Yellow));
+            }
+
             List<DebugInformation> newDebugInfo = new List<DebugInformation>();
             newDebugInfo.AddRange(verticesDebugInfo);
             //newDebugInfo.AddRange(fallingDebugInfo);
             //newDebugInfo.AddRange(jumpingDebugInfo);
             newDebugInfo.AddRange(edgesDebugInfo);
+            newDebugInfo.AddRange(bestPathDebugInfo);
 
             debugInfo = newDebugInfo.ToArray();
         }
