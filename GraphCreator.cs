@@ -15,7 +15,7 @@ namespace GeometryFriendsAgents
         private CountInformation numbersInfo;
         private RectangleRepresentation rectangleInfo;
         private CircleRepresentation circleInfo;
-        private ObstacleRepresentation[] obstaclesInfo;
+        public ObstacleRepresentation[] obstaclesInfo;
         private ObstacleRepresentation[] rectanglePlatformsInfo;
         private ObstacleRepresentation[] circlePlatformsInfo;
         private CollectibleRepresentation[] collectiblesInfo;
@@ -59,7 +59,7 @@ namespace GeometryFriendsAgents
         {
             const float MAX_VELOCITY = 200;
             const float MAX_ANGULAR_VELOCITY = 4;
-            const float VELOCITIES = 1;
+            const float VELOCITIES = 3;
             const float VELOCITY_STEP = MAX_VELOCITY / VELOCITIES;
             const float ANGULAR_VELOCITY_STEP = MAX_ANGULAR_VELOCITY / VELOCITIES;
 
