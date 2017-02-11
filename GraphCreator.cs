@@ -43,7 +43,14 @@ namespace GeometryFriendsAgents
             circlePlatformsInfo = cPI;
             collectiblesInfo = colI;
             this.area = area;
-            AllObstacles = obstaclesInfo.Concat(circlePlatformsInfo).Concat(rectanglePlatformsInfo).ToList();
+
+            AllObstacles = obstaclesInfo.ToList();
+            // gdy aktualna mapa zawiera kółko
+            if (!(circleInfo.X < 0 || circleInfo.Y < 0))
+                AllObstacles = AllObstacles.Concat(rectanglePlatformsInfo).ToList();
+            // gdy aktualna mapa zawiera prostokąt
+            if (!(rectangleInfo.X < 0 || rectangleInfo.Y < 0))
+                AllObstacles = AllObstacles.Concat(circlePlatformsInfo).ToList();
 
             CreateGraph();
         }
@@ -244,8 +251,8 @@ namespace GeometryFriendsAgents
         private ObstacleRepresentation GetClosestObstacleUnder(Vertex vertex)
         {
             return AllObstacles
-                                .Where(obst => obst.Y > vertex.Y && obst.X - obst.Width / 2 <= vertex.X && obst.X + obst.Width / 2 >= vertex.X)
-                                .Aggregate((obst1, obst2) => (obst1.Y - vertex.Y) < (obst2.Y - vertex.Y) ? obst1 : obst2);
+                        .Where(obst => obst.Y > vertex.Y && obst.X - obst.Width / 2 <= vertex.X && obst.X + obst.Width / 2 >= vertex.X)
+                        .Aggregate((obst1, obst2) => (obst1.Y - vertex.Y) < (obst2.Y - vertex.Y) ? obst1 : obst2);
         }
 
         private void CreateGraph()
@@ -293,13 +300,7 @@ namespace GeometryFriendsAgents
         // tworzy wierzchołki na początku i końcu każdej platformy (jeśli nie ma tam innej przeszkody lub kąta)
         private void CreateObstacleStartEndVertices()
         {
-            foreach (var obstacle in obstaclesInfo)
-                CreateStartEndVertex(obstacle);
-
-            // foreach (var obstacle in circlePlatformsInfo)
-                // CreateStartEndVertex(obstacle);
-
-            foreach (var obstacle in rectanglePlatformsInfo)
+            foreach (var obstacle in AllObstacles)
                 CreateStartEndVertex(obstacle);
         }
 
@@ -340,25 +341,7 @@ namespace GeometryFriendsAgents
             float top1 = vertex.Y - (vertex.Height / 2); float right1 = vertex.X + (vertex.Width / 2);
             float bottom1 = vertex.Y + (vertex.Height / 2); float left1 = vertex.X - (vertex.Width / 2);
 
-            foreach (var obstacle in obstaclesInfo)
-            {
-                float top2 = obstacle.Y - (obstacle.Height / 2); float right2 = obstacle.X + (obstacle.Width / 2);
-                float bottom2 = obstacle.Y + (obstacle.Height / 2); float left2 = obstacle.X - (obstacle.Width / 2);
-
-                if (left1 <= right2 && right1 >= left2 && top1 < bottom2 && bottom1 > top2)
-                    return false;
-            }
-
-            foreach (var obstacle in circlePlatformsInfo)
-            {
-                float top2 = obstacle.Y - (obstacle.Height / 2); float right2 = obstacle.X + (obstacle.Width / 2);
-                float bottom2 = obstacle.Y + (obstacle.Height / 2); float left2 = obstacle.X - (obstacle.Width / 2);
-
-                if (left1 <= right2 && right1 >= left2 && top1 < bottom2 && bottom1 > top2)
-                    return false;
-            }
-
-            foreach (var obstacle in rectanglePlatformsInfo)
+            foreach (var obstacle in AllObstacles)
             {
                 float top2 = obstacle.Y - (obstacle.Height / 2); float right2 = obstacle.X + (obstacle.Width / 2);
                 float bottom2 = obstacle.Y + (obstacle.Height / 2); float left2 = obstacle.X - (obstacle.Width / 2);
