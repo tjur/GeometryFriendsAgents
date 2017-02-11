@@ -52,7 +52,7 @@ namespace GeometryFriendsAgents
         {
             const float MAX_VELOCITY = 200;
             const float MAX_ANGULAR_VELOCITY = 4;
-            const float VELOCITIES = 3;
+            const float VELOCITIES = 1;
             const float VELOCITY_STEP = MAX_VELOCITY / VELOCITIES;
             const float ANGULAR_VELOCITY_STEP = MAX_ANGULAR_VELOCITY / VELOCITIES;
 

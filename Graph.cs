@@ -32,6 +32,37 @@ namespace GeometryFriendsAgents
         }
 
 
+        public int dfs_init(Vertex start, Vertex goal)
+        {
+            Dictionary<Vertex, bool> vis = new Dictionary<Vertex, bool>();
+            foreach (var v in this.Vertices)
+                vis[v] = false;
+
+
+
+            return dfs(start,goal,vis);
+        }
+        public int dfs(Vertex start, Vertex goal,Dictionary<Vertex,bool> vis)
+        {
+            if (start == goal)
+                return 1;
+
+            vis[start] = true;
+            int is_all = 0;
+            if (Edges.Keys.Contains(start))
+                foreach (var neighbor in Edges[start].Keys)
+                {
+                    if (vis[neighbor]==false)
+                    {
+                        if (dfs(neighbor, goal, vis) == 1)
+                            is_all = 1;
+                    }
+                }
+
+
+                    return is_all;
+        }
+
         public Tuple<float, List<Vertex>> A_star(Vertex start, Vertex goal)
         {
             HashSet<Vertex> closedset=new HashSet<Vertex>();
@@ -117,9 +148,31 @@ namespace GeometryFriendsAgents
                                     .SelectMany(t => list.Where(o => !t.Contains(o)), (t1, t2) => t1.Concat(new T[] { t2 }));
         }
 
+        public void Fun()
+        {
+            List<Vertex> CollectiblesVertices = Vertices.Where(vertex => vertex.Type == VertexType.OnCollectible).ToList();
+            for (int i = 0; i < CollectiblesVertices.Count; i++)
+                for (int j = 0; j < CollectiblesVertices.Count; j++)
+                {
+                    Debug.WriteLine("__________________________");
+                    Debug.WriteLine(i.ToString() + " " + j);
+
+                    Debug.WriteLine(CollectiblesVertices[i].X.ToString() + " " + CollectiblesVertices[i].Y.ToString());
+
+                    Debug.WriteLine(CollectiblesVertices[j].X.ToString() + " " + CollectiblesVertices[j].Y.ToString());
+
+                    Debug.WriteLine(A_star(CollectiblesVertices[i], CollectiblesVertices[j]));
+                    Debug.WriteLine(dfs_init(CollectiblesVertices[i], CollectiblesVertices[j]));
+
+                }
+
+
+        }
+
+
         public List<Vertex> FindBestPath()
         {
-            IEnumerable<Vertex> CollectiblesVertices = Vertices.Where(vertex => vertex.Type == VertexType.OnCollectible);
+           IEnumerable<Vertex> CollectiblesVertices = Vertices.Where(vertex => vertex.Type == VertexType.OnCollectible);
             List<Vertex> BestPath = new List<Vertex>();
             float BestPathCost = 100000f;
             Vertex StartVertex = Vertices.Where(vertex => vertex.Type == VertexType.OnCircleStart).First();

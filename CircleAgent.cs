@@ -375,7 +375,8 @@ namespace GeometryFriendsAgents
 
             if ((DateTime.Now-lastaction).TotalSeconds >= time_step)
             {
-                test();
+             //   Graph.Fun();
+             //   test();
                 _CreateOtherVertices(predictor);
                 lastaction = DateTime.Now;        
                 // MCTS_with_target mcts = new MCTS_with_target(possibleMoves, currentAction, CP, NumberOfCollectibles);            
