@@ -377,9 +377,8 @@ namespace GeometryFriendsAgents
             {
 
                 //   Graph.Fun();
-                //   test();
                 // test();
-                test_fun();
+                // test_fun();
                 _CreateOtherVertices(predictor);
                 lastaction = DateTime.Now;        
                 // MCTS_with_target mcts = new MCTS_with_target(possibleMoves, currentAction, CP, NumberOfCollectibles);            
@@ -622,7 +621,6 @@ namespace GeometryFriendsAgents
 
         private void _CreateOtherVertices(ActionSimulator simulator)
         {
-            System.Threading.Thread.Sleep(5000);
             if (simulator == null || _createdOtherVertices) return;
 
             _createdOtherVertices = true;
@@ -640,8 +638,8 @@ namespace GeometryFriendsAgents
                 const float alpha = 0.33f;
                 GeometryFriends.XNAStub.Color color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.Orange, alpha);
                 if (vertex.Type == VertexType.FallenFromLeft || vertex.Type == VertexType.FallenFromRight) color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.CornflowerBlue, alpha);
-                if (vertex.Type == VertexType.Jumping) color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.Brown,alpha);
-
+                if (vertex.Type == VertexType.Jumping) color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.Brown, alpha);
+                if (vertex.Type == VertexType.Rolling) color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.BlanchedAlmond, alpha);
 
                 foreach (Vertex neighbour in Graph.Edges[vertex].Keys)
                     edgesDebugInfo.Add(DebugInformationFactory.CreateLineDebugInfo(new PointF(vertex.X, vertex.Y), new PointF(neighbour.X, neighbour.Y), GeometryFriends.XNAStub.Color.Black));

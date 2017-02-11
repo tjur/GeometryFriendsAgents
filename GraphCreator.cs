@@ -155,44 +155,47 @@ namespace GeometryFriendsAgents
                     else
                         position = new PointF(vertex.X + vertex.Width / 2 - X_POSITION_OFFSET, vertex.Y + vertex.Height / 2 - simulator.CircleVelocityRadius);
 
-                    var tuple = _CreateFallenVertex(simulator, position, linearVelocity, angularVelocity, true);
-                    var jumpingVertex = tuple.Item1;
-                    jumpingVertex.Type = VertexType.Jumping;
-
-                    var obstacleUnder = GetClosestObstacleUnder(jumpingVertex);
-                    jumpingVertex.Obstacle = obstacleUnder;
-
-                    // nie chcemy wyladowac na tej samej przeszkodzie +
-                    // dopuszczalna odleglosc przeszkody od vertexa
-                    const float IS_OKAY = 5;
-                    if (!vertex.Obstacle.Equals(obstacleUnder) &&
-                        obstacleUnder.Y - obstacleUnder.Height / 2 - (jumpingVertex.Y + jumpingVertex.Height / 2) <= IS_OKAY)
+                    foreach (bool jump in new[] { true, false })
                     {
-                        var closestOnObstacle = Graph.GetAllVerticesOnObstacle(obstacleUnder)
-                                                     .Aggregate((minVertex, v) =>
-                                                        Math.Abs(jumpingVertex.X - minVertex.X) < Math.Abs(jumpingVertex.X - v.X) ?
-                                                            minVertex : v
-                                                     );
+                        var tuple = _CreateFallenVertex(simulator, position, linearVelocity, angularVelocity, jump);
+                        var jumpingVertex = tuple.Item1;
+                        jumpingVertex.Type = jump ? VertexType.Jumping : VertexType.Rolling;
 
-                        const float IS_CLOSE_ENOUGH = 100;
-                        if (Math.Abs(jumpingVertex.X - closestOnObstacle.X) <= IS_CLOSE_ENOUGH)
-                            jumpingVertex = closestOnObstacle;
-                        else
-                            jumpingVertices.Add(jumpingVertex);
+                        var obstacleUnder = GetClosestObstacleUnder(jumpingVertex);
+                        jumpingVertex.Obstacle = obstacleUnder;
 
-                        var verticesToAddEdges = tuple.Item3;
-                        verticesToAddEdges.Add(Tuple.Create(jumpingVertex, simulator.SimulatedTime));
-
-                        foreach (var pair in verticesToAddEdges)
+                        // nie chcemy wyladowac na tej samej przeszkodzie +
+                        // dopuszczalna odleglosc przeszkody od vertexa
+                        const float IS_OKAY = 5;
+                        if (!vertex.Obstacle.Equals(obstacleUnder) &&
+                            obstacleUnder.Y - obstacleUnder.Height / 2 - (jumpingVertex.Y + jumpingVertex.Height / 2) <= IS_OKAY)
                         {
-                            Graph.AddEdge(vertex, pair.Item1);
-                            var edge = Graph.Edges[vertex][pair.Item1];
-                            edge.SuggestedMove = Moves.JUMP;
-                            edge.SuggestedXVelocity = linearVelocity.X;
-                            edge.SuggestedTime = simulator.SimulatedTime;
-                        }
+                            var closestOnObstacle = Graph.GetAllVerticesOnObstacle(obstacleUnder)
+                                                         .Aggregate((minVertex, v) =>
+                                                            Math.Abs(jumpingVertex.X - minVertex.X) < Math.Abs(jumpingVertex.X - v.X) ?
+                                                                minVertex : v
+                                                         );
 
-                        debugInformations.AddRange(tuple.Item2);
+                            const float IS_CLOSE_ENOUGH = 100;
+                            if (Math.Abs(jumpingVertex.X - closestOnObstacle.X) <= IS_CLOSE_ENOUGH)
+                                jumpingVertex = closestOnObstacle;
+                            else
+                                jumpingVertices.Add(jumpingVertex);
+
+                            var verticesToAddEdges = tuple.Item3;
+                            verticesToAddEdges.Add(Tuple.Create(jumpingVertex, simulator.SimulatedTime));
+
+                            foreach (var pair in verticesToAddEdges)
+                            {
+                                Graph.AddEdge(vertex, pair.Item1);
+                                var edge = Graph.Edges[vertex][pair.Item1];
+                                edge.SuggestedMove = jump ? Moves.JUMP : linearVelocity.X < 0 ? Moves.ROLL_LEFT : Moves.ROLL_RIGHT;
+                                edge.SuggestedXVelocity = linearVelocity.X;
+                                edge.SuggestedTime = simulator.SimulatedTime;
+                            }
+
+                            debugInformations.AddRange(tuple.Item2);
+                        }
                     }
                 }
             }
