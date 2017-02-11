@@ -12,6 +12,9 @@ namespace GeometryFriendsAgents
 {
     class GraphCreator
     {
+        private const float VertexWidth = 80;
+        private const float VertexHeight = 40;
+
         private CountInformation numbersInfo;
         private RectangleRepresentation rectangleInfo;
         private CircleRepresentation circleInfo;
@@ -105,7 +108,7 @@ namespace GeometryFriendsAgents
                             foreach (var pair in verticesToAddEdges)
                             {
                                 var edge = Graph.AddEdge(vertex, pair.Item1);
-                                edge.SuggestedMove = jump ? Moves.JUMP : Moves.NO_ACTION;
+                                edge.SuggestedMove = jump ? Moves.JUMP : linearVelocity.X < 0 ? Moves.ROLL_LEFT : Moves.ROLL_RIGHT;
                                 edge.SuggestedXVelocity = linearVelocity.X;
                                 edge.SuggestedTime = simulator.SimulatedTime;
                             }
@@ -206,9 +209,6 @@ namespace GeometryFriendsAgents
 
         private Tuple<Vertex, List<DebugInformation>, List<Tuple<Vertex, float>>> _CreateFallenVertex(ActionSimulator simulator, PointF position, PointF linearVelocity, float angularVelocity, bool jump)
         {
-            const int vertexWidth = 50;
-            const int vertexHeight = 40;
-
             List<Tuple<Vertex, float>> collectibleVerticesCaught = new List<Tuple<Vertex, float>>();
 
             simulator.ResetSimulator();
@@ -247,8 +247,8 @@ namespace GeometryFriendsAgents
                 simulator.Update(0.01f);
 
             VertexType vertexType = simulator.CircleVelocityX > 0 ? VertexType.FallenFromLeft : VertexType.FallenFromRight;
-            PointF vertexPosition = new PointF(simulator.CirclePositionX, simulator.CirclePositionY + simulator.CircleVelocityRadius - vertexHeight / 2);
-            return Tuple.Create(new Vertex(vertexPosition.X, vertexPosition.Y, vertexWidth, vertexHeight, vertexType), simulator.SimulationHistoryDebugInformation, collectibleVerticesCaught);
+            PointF vertexPosition = new PointF(simulator.CirclePositionX, simulator.CirclePositionY + simulator.CircleVelocityRadius - VertexHeight / 2);
+            return Tuple.Create(new Vertex(vertexPosition.X, vertexPosition.Y, VertexWidth, VertexHeight, vertexType), simulator.SimulationHistoryDebugInformation, collectibleVerticesCaught);
         }
 
         private ObstacleRepresentation GetClosestObstacleUnder(Vertex vertex)
@@ -272,9 +272,6 @@ namespace GeometryFriendsAgents
         // tworzy wierzchołek (lub wierzchołki, gdy na planszy jest zarówno kółko i prostokąt) w miejscu startu
         private void CreateOnStartVertex()
         {
-            float Width = 50;
-            float Height = 40;
-
             // gdy aktualna mapa zawiera kółko
             if (!(circleInfo.X < 0 || circleInfo.Y < 0))
             {
@@ -283,7 +280,7 @@ namespace GeometryFriendsAgents
                                             .Where(obst => obst.Y > circleInfo.Y && obst.X - obst.Width / 2 <= circleInfo.X && obst.X + obst.Width / 2 >= circleInfo.X)
                                             .Aggregate((obst1, obst2) => (obst1.Y - circleInfo.Y) < (obst2.Y - circleInfo.Y) ? obst1 : obst2);
 
-                Vertex vertex = new Vertex(circleInfo.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (Height / 2), Width, Height, VertexType.OnCircleStart, obstacleUnder);
+                Vertex vertex = new Vertex(circleInfo.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (VertexHeight / 2), VertexWidth, VertexHeight, VertexType.OnCircleStart, obstacleUnder);
                 Graph.Vertices.Add(vertex);
             }
 
@@ -295,7 +292,7 @@ namespace GeometryFriendsAgents
                                             .Where(obst => obst.Y > rectangleInfo.Y && obst.X - obst.Width / 2 <= rectangleInfo.X && obst.X + obst.Width / 2 >= rectangleInfo.X)
                                             .Aggregate((obst1, obst2) => (obst1.Y - rectangleInfo.Y) < (obst2.Y - rectangleInfo.Y) ? obst1 : obst2);
 
-                Vertex vertex = new Vertex(rectangleInfo.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (Height / 2), Width, Height, VertexType.OnRectangleStart, obstacleUnder);
+                Vertex vertex = new Vertex(rectangleInfo.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (VertexHeight / 2), VertexWidth, VertexHeight, VertexType.OnRectangleStart, obstacleUnder);
                 Graph.Vertices.Add(vertex);
             }
         }
@@ -313,9 +310,6 @@ namespace GeometryFriendsAgents
             float rightTopCornerX = obstacle.X + (obstacle.Width / 2);
             float upCornerY = obstacle.Y - (obstacle.Height / 2);
 
-            float Width = 50;
-            float Height = 40;
-
             Vertex vertex;
 
             // wąska przeszkoda - zamiat dwóch robimy jeden wierzchołek na całej przeszkodzie
@@ -328,10 +322,10 @@ namespace GeometryFriendsAgents
                 return;
             }*/
 
-            vertex = new Vertex(leftTopCornerX + (Width / 2), upCornerY - (Height / 2), Width, Height, VertexType.OnObstacleLeft, obstacle);
+            vertex = new Vertex(leftTopCornerX + (VertexWidth / 2), upCornerY - (VertexHeight / 2), VertexWidth, VertexHeight, VertexType.OnObstacleLeft, obstacle);
             if (VertexNotCollide(vertex))
                 Graph.Vertices.Add(vertex);
-            vertex = new Vertex(rightTopCornerX - (Width / 2), upCornerY - (Height / 2), Width, Height, VertexType.OnObstacleRight, obstacle);
+            vertex = new Vertex(rightTopCornerX - (VertexWidth / 2), upCornerY - (VertexHeight / 2), VertexWidth, VertexHeight, VertexType.OnObstacleRight, obstacle);
             if (VertexNotCollide(vertex))
                 Graph.Vertices.Add(vertex);
         }
@@ -364,8 +358,6 @@ namespace GeometryFriendsAgents
         private void CreateCollectibleVertices()
         {
             int R = 40; // szer. i wys. wierzchołka na diamencie
-            int Width = 50;
-            int Height = 40;
 
             foreach (var coll in collectiblesInfo)
             {
@@ -379,7 +371,7 @@ namespace GeometryFriendsAgents
                                             .Where(obst => obst.Y > coll.Y && obst.X - obst.Width / 2 <= coll.X && obst.X + obst.Width / 2 >= coll.X)
                                             .Aggregate((obst1, obst2) => (obst1.Y - coll.Y) < (obst2.Y - coll.Y) ? obst1 : obst2);
 
-                Vertex VertexUnderCollectible = new Vertex(coll.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (Height / 2), Width, Height, VertexType.UnderCollectible, obstacleUnder);
+                Vertex VertexUnderCollectible = new Vertex(coll.X, obstacleUnder.Y - (obstacleUnder.Height / 2) - (VertexHeight / 2), VertexWidth, VertexHeight, VertexType.UnderCollectible, obstacleUnder);
                 Graph.Vertices.Add(VertexUnderCollectible);
 
                 // krawędź w dół zawsze istnieje
@@ -448,7 +440,7 @@ namespace GeometryFriendsAgents
 
                         Graph.AddEdge(vertexRight, vertexLeft);
                         edge = Graph.Edges[vertexRight][vertexLeft];
-                        edge.SuggestedMove = Moves.MOVE_LEFT;
+                        edge.SuggestedMove = Moves.ROLL_LEFT;
                         edge.SuggestedTime = suggestedTime;
                     }
                 }

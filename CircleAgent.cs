@@ -24,14 +24,18 @@ namespace GeometryFriendsAgents
         private string agentName = "MCTSCircle";
 
         //auxiliary variables for agent action
+        private MCTS_with_target MCTS_with_target;
+        private List<Vertex> BestPath;
+        private int CurrentTargetIndex;
         private Moves currentAction;
         private List<Moves> possibleMoves;
-        private long lastMoveTime;
+        private long LastMoveTime;
         private Random rnd;
 
         //predictor of actions for the circle
         private ActionSimulator predictor = null;
         private DebugInformation[] debugInfo = null;
+        private List<DebugInformation> staticDebugInfo = null;
         private int debugCircleSize = 20;
 
         //debug agent predictions and history keeping
@@ -70,7 +74,7 @@ namespace GeometryFriendsAgents
         const int max_size = 10000;
 
 
-        float time_step = 1f;
+        float time_step = 0.2f;
         DateTime lastaction;
 
 
@@ -227,7 +231,7 @@ namespace GeometryFriendsAgents
             implementedAgent = true;
 
             //setup for action updates
-            lastMoveTime = DateTime.Now.Second;
+            // LastMoveTime = DateTime.Now.Second;
             currentAction = Moves.NO_ACTION;
             rnd = new Random();
 
@@ -372,34 +376,22 @@ namespace GeometryFriendsAgents
 
         public override void Update(TimeSpan elapsedGameTime)
         {
-
             if ((DateTime.Now-lastaction).TotalSeconds >= time_step)
             {
-                //predictor.DebugInfo = true;
-                //predictor.AddInstruction(Moves.ROLL_RIGHT, 2000);
-                //predictor.Update(2);
-                //predictor.Actions.Clear();
-                //predictor.AddInstruction(Moves.ROLL_LEFT, 4000);
-                //predictor.Update(4);
-                //predictor.Actions.Clear();
-                //predictor.AddInstruction(Moves.ROLL_RIGHT, 2000);
-                //predictor.Update(2);
-                //predictor.Actions.Clear();
-                //predictor.AddInstruction(Moves.ROLL_LEFT, 4000);
-                //predictor.Update(4);
-                //predictor.Actions.Clear();
-                //predictor.AddInstruction(Moves.JUMP, 1000);
-                //predictor.Update(1);
-                //predictor.Actions.Clear();
+                _CreateOtherVertices(predictor);
+                MostImportantFunction();
 
+                List<DebugInformation> newDebugInfo = new List<DebugInformation>();
+                newDebugInfo.AddRange(staticDebugInfo);
 
-                //RunSimulator(predictor, akcja, czas);
+                Vertex vertex = BestPath[CurrentTargetIndex];
+                newDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.BlanchedAlmond, 0.33f)));
 
-                debugInfo = predictor.SimulationHistoryDebugInformation.ToArray();
+                debugInfo = newDebugInfo.ToArray();
+
                 //   Graph.Fun();
                 // test();
                 // test_fun();
-                _CreateOtherVertices(predictor);
                 lastaction = DateTime.Now;        
                 // MCTS_with_target mcts = new MCTS_with_target(possibleMoves, currentAction, CP, NumberOfCollectibles);            
                 // currentAction = mcts.UCTSearch_with_target(predictor,Graph.Vertices.ElementAt(4),time_step/1000);
@@ -643,8 +635,6 @@ namespace GeometryFriendsAgents
         {
             if (simulator == null || _createdOtherVertices) return;
 
-            _createdOtherVertices = true;
-
             List<DebugInformation> fallingDebugInfo = GraphCreator.AddFallingVertices(simulator);
             List<DebugInformation> jumpingDebugInfo = GraphCreator.AddJumpingVertices(simulator);
             List<DebugInformation> verticesDebugInfo = new List<DebugInformation>();
@@ -689,13 +679,41 @@ namespace GeometryFriendsAgents
             }
 
             List<DebugInformation> newDebugInfo = new List<DebugInformation>();
-            newDebugInfo.AddRange(verticesDebugInfo);
+            //newDebugInfo.AddRange(verticesDebugInfo);
             //newDebugInfo.AddRange(fallingDebugInfo);
             //newDebugInfo.AddRange(jumpingDebugInfo);
-            newDebugInfo.AddRange(edgesDebugInfo);
+            //newDebugInfo.AddRange(edgesDebugInfo);
             newDebugInfo.AddRange(bestPathDebugInfo);
-            newDebugInfo.AddRange(numbers);
-            debugInfo = newDebugInfo.ToArray();
+            //newDebugInfo.AddRange(numbers);
+            staticDebugInfo = newDebugInfo;
+
+            _createdOtherVertices = true;
+        }
+
+        public static void RunSimulator(ActionSimulator simulator, Moves move, float timeMs)
+        {
+            simulator.AddInstruction(move, timeMs);
+            simulator.Update(timeMs / 1000);
+            simulator.Actions.Clear();
+        }
+
+        private void MostImportantFunction()
+        {
+            if (!_createdOtherVertices) return;
+
+            if (BestPath == null)
+            {
+                MCTS_with_target = new MCTS_with_target(possibleMoves, 1.0 / Math.Sqrt(2), Graph);
+                BestPath = Graph.FindBestPath();
+                CurrentTargetIndex = 1;
+            }
+
+            if (MCTS_with_target.check_intersect(BestPath[CurrentTargetIndex], circleInfo.X, circleInfo.Y, circleInfo.Radius))
+            {
+                CurrentTargetIndex++;
+            }
+
+            currentAction = MCTS_with_target.UCTSearch_with_target(predictor, BestPath[CurrentTargetIndex - 1], BestPath[CurrentTargetIndex], time_step, currentAction);
         }
     }
 }

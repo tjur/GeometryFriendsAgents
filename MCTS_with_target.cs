@@ -15,13 +15,12 @@ namespace GeometryFriendsAgents
     {
 
         private List<Moves> possibleMoves;
-        private Moves currentAction;
         private Random rnd;
         private double CP;
-        private int NumberOfCollectibles;
+        private Graph Graph;
 
         //p0-p1 vs p2-p3
-       public bool get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y,
+       public static bool get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y,
                             float p2_x, float p2_y, float p3_x, float p3_y)
         {
                 float s02_x, s02_y, s10_x, s10_y, s32_x, s32_y, s_numer, t_numer, denom, t;
@@ -52,12 +51,12 @@ namespace GeometryFriendsAgents
             }
 
 
-        public float dist(float x1,float y1,float x2,float y2)
+        public static float dist(float x1,float y1,float x2,float y2)
         {
             return (float) Math.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
         }
 
-        public bool check_intersect(Vertex ver,float x,float y,float r)
+        public static bool check_intersect(Vertex ver,float x,float y,float r)
         {
             if (dist(ver.X - ver.Width / 2, ver.Y - ver.Height / 2, x, y) <= r)
                 return true;
@@ -80,19 +79,21 @@ namespace GeometryFriendsAgents
             return false;
         }
 
-        public MCTS_with_target(List<Moves> possibleMoves, Moves currentAction, double CP, int NumberOfCollectibles)
+        public MCTS_with_target(List<Moves> possibleMoves, double CP, Graph Graph)
         {
             this.possibleMoves = possibleMoves;
-            this.currentAction = currentAction;
             this.rnd = new Random();
             this.CP = CP;
-            this.NumberOfCollectibles = NumberOfCollectibles;
+            this.Graph = Graph;
         }
 
-
-
-        private MCTSTreeNode Expand_with_target(MCTSTreeNode node)
+        private MCTSTreeNode Expand_with_target(MCTSTreeNode node, Vertex source, Vertex target)
         {
+            Moves suggestedMove = Graph.Edges[source][target].SuggestedMove;
+
+            if (node.Children.Count == 0)
+                return node.AddNewMove(suggestedMove);
+
             List<Moves> notUsedActions = possibleMoves.Except(node.Children.Select(c => c.Move)).ToList();
             Moves newMove = notUsedActions[rnd.Next(notUsedActions.Count)];
 
@@ -123,16 +124,16 @@ namespace GeometryFriendsAgents
             return bestNode;
         }
 
-        private MCTSTreeNode TreePolicy_with_target(ActionSimulator simulator, MCTSTreeNode node, float move_time_ms)
+        private MCTSTreeNode TreePolicy_with_target(ActionSimulator simulator, MCTSTreeNode node, float move_time, Vertex source, Vertex target)
         {
             while (true) // todo: może nie warto schodzić zbyt głęboko
             {
                 if (node.Children.Count < possibleMoves.Count)
-                    return Expand_with_target(node);
+                    return Expand_with_target(node, source, target);
                 else
                 {
                     node = BestChild_with_target(node, CP);
-                    simulator.AddInstruction(node.Move, move_time_ms);
+                    CircleAgent.RunSimulator(simulator, node.Move, move_time * 1000);
                 }
             }
         }
@@ -160,45 +161,59 @@ namespace GeometryFriendsAgents
         }
 
 
-        private double DefaultPolicy_with_target(ActionSimulator simulator, MCTSTreeNode node, Vertex target, float move_time_ms)
+        private double DefaultPolicy_with_target(ActionSimulator simulator, MCTSTreeNode node, Vertex source, Vertex target, float move_time)
         {
-            float SECONDS_OF_SIMULATION =(float) Math.Sqrt(((target.X-simulator.CirclePositionX)* (target.X - simulator.CirclePositionX)+ (target.Y - simulator.CirclePositionY)* (target.Y - simulator.CirclePositionY)))/200+3;
+            float SECONDS_OF_SIMULATION =(float) Math.Sqrt(((target.X-simulator.CirclePositionX)* (target.X - simulator.CirclePositionX)+ (target.Y - simulator.CirclePositionY)* (target.Y - simulator.CirclePositionY)))/200+0.5f;
             float step = 0.1f;
             float CircleSize = 40;
-            simulator.AddInstruction(node.Move, move_time_ms);
+            float SuggestedMoveChance = 0.5f;
 
-            for (int i = 0; i < SECONDS_OF_SIMULATION; i++)
-                simulator.AddInstruction(possibleMoves[rnd.Next(possibleMoves.Count)], move_time_ms);
+            CircleAgent.RunSimulator(simulator, node.Move, move_time * 1000);
 
+            float movesInMoveTime = SECONDS_OF_SIMULATION / move_time;
 
-           // Rectangle circle = new Rectangle((int)(simulator.CirclePositionX-CircleSize/2), (int)(simulator.CirclePositionY-CircleSize/2), (int)(CircleSize), (int)(CircleSize));
-
-
-            for (float i=0; i <SECONDS_OF_SIMULATION;i+=step )
+            for (int i = 0; i < movesInMoveTime; i++)
             {
-                if (check_intersect(target, simulator.CirclePositionX, simulator.CirclePositionY,CircleSize/2))
-                    return 1;
-              
-                simulator.Update(step);
+                Moves move = possibleMoves[rnd.Next(possibleMoves.Count)];
+
+                if (rnd.NextDouble() < SuggestedMoveChance)
+                    move = Graph.Edges[source][target].SuggestedMove;
+
+                float numberOfSteps = move_time / step;
+
+                for (int j = 0; j < numberOfSteps; j++)
+                {
+                    CircleAgent.RunSimulator(simulator, move, step * 1000);
+
+                    if (check_intersect(target, simulator.CirclePositionX, simulator.CirclePositionY, CircleSize / 2))
+                        return 1;
+                }
             }
-            
+
             return 0;
+
+            float d = dist(simulator.CirclePositionX, simulator.CirclePositionY, target.X, target.Y);
+
+            double CONST2 = 1000;
+            double g = Math.Max(-d / CONST2 + 1, 0);
+
+            return g;
         }
 
-        public Moves UCTSearch_with_target(ActionSimulator simulator, Vertex target, float move_time_ms)
+        public Moves UCTSearch_with_target(ActionSimulator simulator, Vertex source, Vertex target, float move_time, Moves currentAction)
         {
             if (simulator == null) { return Moves.NO_ACTION; }
 
             MCTSTreeNode root = new MCTSTreeNode(Moves.NO_ACTION, null);
             DateTime start = DateTime.Now;
 
-            while ((DateTime.Now - start).TotalMilliseconds < move_time_ms)
+            while ((DateTime.Now - start).TotalSeconds < move_time)
             {
-                simulator.AddInstruction(/*Moves.NO_ACTION*/this.currentAction, move_time_ms);
-                // simulator.SimulatorStep = 0.1f;
+                simulator.SimulatorStep = 0.05f;
+                CircleAgent.RunSimulator(simulator, currentAction, move_time * 1000);
 
-                MCTSTreeNode node = TreePolicy_with_target(simulator, root, move_time_ms);
-                double value = DefaultPolicy_with_target(simulator, node, target, move_time_ms);
+                MCTSTreeNode node = TreePolicy_with_target(simulator, root, move_time, source, target);
+                double value = DefaultPolicy_with_target(simulator, node, source, target, move_time);
                 BackUp_with_target(node, value);
 
                 simulator.ResetSimulator();
