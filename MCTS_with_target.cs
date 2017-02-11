@@ -192,7 +192,7 @@ namespace GeometryFriendsAgents
             MCTSTreeNode root = new MCTSTreeNode(Moves.NO_ACTION, null);
             DateTime start = DateTime.Now;
 
-            while ((DateTime.Now - start).Seconds < move_time_ms * 1000)
+            while ((DateTime.Now - start).TotalMilliseconds < move_time_ms)
             {
                 simulator.AddInstruction(/*Moves.NO_ACTION*/this.currentAction, move_time_ms);
                 // simulator.SimulatorStep = 0.1f;

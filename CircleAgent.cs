@@ -375,7 +375,27 @@ namespace GeometryFriendsAgents
 
             if ((DateTime.Now-lastaction).TotalSeconds >= time_step)
             {
+                //predictor.DebugInfo = true;
+                //predictor.AddInstruction(Moves.ROLL_RIGHT, 2000);
+                //predictor.Update(2);
+                //predictor.Actions.Clear();
+                //predictor.AddInstruction(Moves.ROLL_LEFT, 4000);
+                //predictor.Update(4);
+                //predictor.Actions.Clear();
+                //predictor.AddInstruction(Moves.ROLL_RIGHT, 2000);
+                //predictor.Update(2);
+                //predictor.Actions.Clear();
+                //predictor.AddInstruction(Moves.ROLL_LEFT, 4000);
+                //predictor.Update(4);
+                //predictor.Actions.Clear();
+                //predictor.AddInstruction(Moves.JUMP, 1000);
+                //predictor.Update(1);
+                //predictor.Actions.Clear();
 
+
+                //RunSimulator(predictor, akcja, czas);
+
+                debugInfo = predictor.SimulationHistoryDebugInformation.ToArray();
                 //   Graph.Fun();
                 // test();
                 // test_fun();
