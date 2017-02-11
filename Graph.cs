@@ -169,9 +169,29 @@ namespace GeometryFriendsAgents
         }
 
 
+       
+       public bool can_go_toobstacle(ObstacleRepresentation start,ObstacleRepresentation? goal)
+        {
+            foreach (Vertex ver in GetAllVerticesOnObstacle(start))
+            {
+                if (Edges.Keys.Contains(ver))
+                    foreach (var neighbor in Edges[ver].Keys)
+                    {
+                        if (neighbor.Obstacle.GetHashCode() == goal.GetHashCode())
+                            return true;
+                    }
+
+            }
+
+
+            return false;
+        }
+
+
+
         public List<Vertex> FindBestPath()
         {
-           IEnumerable<Vertex> CollectiblesVertices = Vertices.Where(vertex => vertex.Type == VertexType.OnCollectible);
+            IEnumerable<Vertex> CollectiblesVertices = Vertices.Where(vertex => vertex.Type == VertexType.OnCollectible);
             List<Vertex> BestPath = new List<Vertex>();
             float BestPathCost = 100000f;
             Vertex StartVertex = Vertices.Where(vertex => vertex.Type == VertexType.OnCircleStart).First();

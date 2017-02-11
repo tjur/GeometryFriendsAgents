@@ -376,9 +376,10 @@ namespace GeometryFriendsAgents
             if ((DateTime.Now-lastaction).TotalSeconds >= time_step)
             {
 
-             //   Graph.Fun();
-             //   test();
+                //   Graph.Fun();
+                //   test();
                 // test();
+                test_fun();
                 _CreateOtherVertices(predictor);
                 lastaction = DateTime.Now;        
                 // MCTS_with_target mcts = new MCTS_with_target(possibleMoves, currentAction, CP, NumberOfCollectibles);            
@@ -428,6 +429,50 @@ namespace GeometryFriendsAgents
             }
 
         }
+
+
+
+
+        public void test_fun()
+        {
+
+            foreach (var obs1 in this.GraphCreator.obstaclesInfo)
+                Debug.WriteLine(Graph.GetAllVerticesOnObstacle(obs1).Count());
+
+            int i = 0;
+            foreach (var obs1 in this.GraphCreator.obstaclesInfo)
+            {
+                int j = 0;
+                foreach (var obs2 in this.GraphCreator.obstaclesInfo)
+                {
+                    if (Graph.can_go_toobstacle(obs1, obs2) && obs1.GetHashCode() != obs2.GetHashCode())
+                    {
+                        //Debug.WriteLine("____________________________");
+                        //Debug.WriteLine(obs1.X.ToString() + " " + obs1.Y.ToString());
+                        //Debug.WriteLine(obs2.X.ToString() + " " + obs2.Y.ToString());
+                        Debug.WriteLine(i.ToString() + " " + j.ToString());
+                    }
+                    //Debug.WriteLine(  Graph.can_go_toobstacle(obs1, obs2));
+                    j++;
+                }
+                i++;
+            }
+
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         //implements abstract circle interface: signals the agent the end of the current level
         public override void EndGame(int collectiblesCaught, int timeElapsed)
@@ -577,6 +622,7 @@ namespace GeometryFriendsAgents
 
         private void _CreateOtherVertices(ActionSimulator simulator)
         {
+            System.Threading.Thread.Sleep(5000);
             if (simulator == null || _createdOtherVertices) return;
 
             _createdOtherVertices = true;
@@ -585,6 +631,7 @@ namespace GeometryFriendsAgents
             List<DebugInformation> jumpingDebugInfo = GraphCreator.AddJumpingVertices(simulator);
             List<DebugInformation> verticesDebugInfo = new List<DebugInformation>();
             List<DebugInformation> edgesDebugInfo = new List<DebugInformation>();
+            List<DebugInformation> numbers = new List<DebugInformation>();
 
             GraphCreator.CreateEdges();
 
@@ -593,12 +640,20 @@ namespace GeometryFriendsAgents
                 const float alpha = 0.33f;
                 GeometryFriends.XNAStub.Color color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.Orange, alpha);
                 if (vertex.Type == VertexType.FallenFromLeft || vertex.Type == VertexType.FallenFromRight) color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.CornflowerBlue, alpha);
-                if (vertex.Type == VertexType.Jumping) color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.Cyan, alpha);
+                if (vertex.Type == VertexType.Jumping) color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.Brown,alpha);
+
 
                 foreach (Vertex neighbour in Graph.Edges[vertex].Keys)
                     edgesDebugInfo.Add(DebugInformationFactory.CreateLineDebugInfo(new PointF(vertex.X, vertex.Y), new PointF(neighbour.X, neighbour.Y), GeometryFriends.XNAStub.Color.Black));
 
                 verticesDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), color));
+            }
+            int nr = 0;
+            foreach (var obs in this.GraphCreator.obstaclesInfo)
+            {
+
+                numbers.Add(DebugInformationFactory.CreateTextDebugInfo(new PointF(obs.X, obs.Y), nr.ToString(), GeometryFriends.XNAStub.Color.White));
+                nr++;
             }
 
             List<Vertex> bestPath = Graph.FindBestPath();
@@ -607,7 +662,7 @@ namespace GeometryFriendsAgents
 
             foreach (var vertex in bestPath)
             {
-                bestPathDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.Red));
+            //    bestPathDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.Red));
             }
 
             for (int i = 0; i < bestPath.Count - 1; i++)
@@ -621,7 +676,7 @@ namespace GeometryFriendsAgents
             //newDebugInfo.AddRange(jumpingDebugInfo);
             newDebugInfo.AddRange(edgesDebugInfo);
             newDebugInfo.AddRange(bestPathDebugInfo);
-
+            newDebugInfo.AddRange(numbers);
             debugInfo = newDebugInfo.ToArray();
         }
     }
