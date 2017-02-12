@@ -96,7 +96,7 @@ namespace GeometryFriendsAgents
                         var tuple = _CreateFallenVertex(simulator, position, linearVelocity, angularVelocity, jump);
                         var fallenVertex = tuple.Item1;
 
-                        var obstacleUnder = GetClosestObstacleUnder(fallenVertex);
+                        var obstacleUnder = GetClosestObstacleUnder(fallenVertex.X, fallenVertex.Y);
 
                         // dopuszczalna odleglosc przeszkody od vertexa
                         const float IS_OKAY = 5;
@@ -164,7 +164,7 @@ namespace GeometryFriendsAgents
                         var jumpingVertex = tuple.Item1;
                         jumpingVertex.Type = jump ? VertexType.Jumping : VertexType.Rolling;
 
-                        var obstacleUnder = GetClosestObstacleUnder(jumpingVertex);
+                        var obstacleUnder = GetClosestObstacleUnder(jumpingVertex.X, jumpingVertex.Y);
                         jumpingVertex.Obstacle = obstacleUnder;
 
                         // nie chcemy wyladowac na tej samej przeszkodzie +
@@ -251,11 +251,11 @@ namespace GeometryFriendsAgents
             return Tuple.Create(new Vertex(vertexPosition.X, vertexPosition.Y, VertexWidth, VertexHeight, vertexType), simulator.SimulationHistoryDebugInformation, collectibleVerticesCaught);
         }
 
-        private ObstacleRepresentation GetClosestObstacleUnder(Vertex vertex)
+        public ObstacleRepresentation GetClosestObstacleUnder(float X, float Y)
         {
             return AllObstacles
-                        .Where(obst => obst.Y > vertex.Y && obst.X - obst.Width / 2 <= vertex.X && obst.X + obst.Width / 2 >= vertex.X)
-                        .Aggregate((obst1, obst2) => (obst1.Y - vertex.Y) < (obst2.Y - vertex.Y) ? obst1 : obst2);
+                        .Where(obst => obst.Y > Y && obst.X - obst.Width / 2 <= X && obst.X + obst.Width / 2 >= X)
+                        .Aggregate((obst1, obst2) => (obst1.Y - Y) < (obst2.Y - Y) ? obst1 : obst2);
         }
 
         private void CreateGraph()
@@ -397,54 +397,68 @@ namespace GeometryFriendsAgents
                 if (!Graph.Edges.ContainsKey(vertex))
                     Graph.Edges.Add(vertex, new Dictionary<Vertex, Edge>());
 
-            CreateSameObstacleEdges();
+            CreateSameObstaclesEdges();
+        }
+
+        public void CreateSameObstacleEdges(ObstacleRepresentation obstacle)
+        {
+            List<Vertex> VerticesOnObstacle = Graph.GetAllVerticesOnObstacle(obstacle);
+            for (int i = 0; i < VerticesOnObstacle.Count - 1; i++)
+            {
+                Vertex vertexLeft = VerticesOnObstacle[i];
+                Vertex vertexRight = VerticesOnObstacle[i + 1];
+                bool obstacleBetween = false;
+
+                foreach (var obstacle2 in AllObstacles)
+                {
+                    float top = obstacle2.Y - (obstacle2.Height / 2);
+                    float bottom = obstacle2.Y + (obstacle2.Height / 2);
+                    float left = obstacle2.X - (obstacle2.Width / 2);
+                    float right = obstacle2.X + (obstacle2.Width / 2);
+
+                    if (left > vertexLeft.X && right < vertexRight.X &&
+                        bottom <= obstacle.Y - (obstacle.Height / 2) &&
+                        (bottom >= vertexLeft.Y - (vertexLeft.Height / 2) || bottom >= vertexRight.Y - (vertexRight.Height / 2)))
+                    {
+                        obstacleBetween = true;
+                        break;
+                    }
+                }
+
+                if (!obstacleBetween)
+                {
+                    float suggestedTime = (vertexRight.X - vertexLeft.X) / 200.0f + 1.0f;
+
+                    Graph.AddEdge(vertexLeft, vertexRight);
+                    Edge edge = Graph.Edges[vertexLeft][vertexRight];
+                    edge.SuggestedMove = Moves.ROLL_RIGHT;
+                    edge.SuggestedTime = suggestedTime;
+
+
+                    Graph.AddEdge(vertexRight, vertexLeft);
+                    edge = Graph.Edges[vertexRight][vertexLeft];
+                    edge.SuggestedMove = Moves.ROLL_LEFT;
+                    edge.SuggestedTime = suggestedTime;
+                }
+            }
         }
 
         // łączy wierzchołki na tej samej przeszkodzie (jeśli nie ma pomiędzy nimi żadnej przeszkody)
-        private void CreateSameObstacleEdges()
+        private void CreateSameObstaclesEdges()
         {
             foreach (var obstacle in AllObstacles)
             {
-                List<Vertex> VerticesOnObstacle = Graph.GetAllVerticesOnObstacle(obstacle);
-                for (int i = 0; i < VerticesOnObstacle.Count - 1; i++)
-                {
-                    Vertex vertexLeft = VerticesOnObstacle[i];
-                    Vertex vertexRight = VerticesOnObstacle[i + 1];
-                    bool obstacleBetween = false;
-
-                    foreach (var obstacle2 in AllObstacles)
-                    {
-                        float top = obstacle2.Y - (obstacle2.Height / 2);
-                        float bottom = obstacle2.Y + (obstacle2.Height / 2);
-                        float left = obstacle2.X - (obstacle2.Width / 2);
-                        float right = obstacle2.X + (obstacle2.Width / 2);
-
-                        if (left > vertexLeft.X && right < vertexRight.X && 
-                            bottom <= obstacle.Y - (obstacle.Height / 2) &&
-                            (bottom >= vertexLeft.Y - (vertexLeft.Height / 2) || bottom >= vertexRight.Y - (vertexRight.Height / 2)))
-                        {
-                            obstacleBetween = true;
-                            break;
-                        }
-                    }
-
-                    if (!obstacleBetween)
-                    {
-                        float suggestedTime = (vertexRight.X - vertexLeft.X) / 200.0f + 1.0f;
-
-                        Graph.AddEdge(vertexLeft, vertexRight);
-                        Edge edge = Graph.Edges[vertexLeft][vertexRight];
-                        edge.SuggestedMove = Moves.ROLL_RIGHT;
-                        edge.SuggestedTime = suggestedTime;
-                       
-
-                        Graph.AddEdge(vertexRight, vertexLeft);
-                        edge = Graph.Edges[vertexRight][vertexLeft];
-                        edge.SuggestedMove = Moves.ROLL_LEFT;
-                        edge.SuggestedTime = suggestedTime;
-                    }
-                }
+                CreateSameObstacleEdges(obstacle);
             }
+        }
+
+        public Vertex CreateVertexUnderPosition(float X, float Y, VertexType type)
+        {
+            var obstacleUnder = GetClosestObstacleUnder(X, Y);
+            var vertex = new Vertex(X, obstacleUnder.Y - obstacleUnder.Height / 2 - VertexHeight / 2, VertexWidth, VertexHeight, type, obstacleUnder);
+            Graph.Vertices.Add(vertex);
+
+            return vertex;
         }
     }
 }

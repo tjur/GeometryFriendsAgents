@@ -52,12 +52,6 @@ namespace GeometryFriendsAgents
         private ObstacleRepresentation[] rectanglePlatformsInfo;
         private ObstacleRepresentation[] circlePlatformsInfo;
         private CollectibleRepresentation[] collectiblesInfo;
-        private int[,] map;
-
-        private int N, M;
-
-        private bool heura_is_init = false;
-        private int size_of_box = 5;
 
         private int nCollectiblesLeft;
 
@@ -69,155 +63,11 @@ namespace GeometryFriendsAgents
         // Graf utworzony przez GraphCreator
         private GraphCreator GraphCreator;
         private Graph Graph;
-        private bool _createdOtherVertices = false;
+        private bool CreatedOtherVertices = false;
+        private DateTime LastTimeOnPath;
 
-        const int max_size = 10000;
-
-
-        float time_step = 0.2f;
+        float time_step = 0.5f;
         DateTime lastaction;
-
-
-
-
-        //skromne funkcje aby uniknac krotek
-        int c2to1(int x, int y)
-        {
-            return max_size * x + y;
-        }
-
-
-        int f1to2(int x)
-        {
-            return x / max_size;
-        }
-
-        int s1to2(int x)
-        {
-            return x % max_size;
-        }
-
-        void bfs_heura_init()
-        {
-            float Sx = area.Width;
-            float Sy = area.Height;
-
-            N = (int)(area.Width - area.X) / size_of_box + 1;
-
-            M = (int)(area.Height - area.Y) / size_of_box + 1;
-
-            map = new int[N, M]; // 0 - empty , 1- only circle can move , 2 - only rectangle can move, 3 nobody can move
-
-            for (int i = 0; i < N; i++)
-                for (int j = 0; j < M; j++)
-                    map[i, j] = 0;
-
-
-            for (int i = 0; i < N; i++)
-                for (int j = 0; j < M; j++)
-                {
-
-                    Rectangle xij = new Rectangle(size_of_box * i + area.X, size_of_box * j + area.Y, size_of_box, size_of_box);
-                    foreach (ObstacleRepresentation x in rectanglePlatformsInfo)
-                    {
-                        Rectangle recx = new Rectangle((int)x.X - (int)x.Width / 2 - area.X, (int)x.Y - (int)x.Height / 2 - area.Y, (int)x.Width, (int)x.Height);
-                        if (!Rectangle.Intersect(xij, recx).IsEmpty)
-                            map[i, j] = 2;
-                    }
-
-                    foreach (ObstacleRepresentation x in circlePlatformsInfo)
-                    {
-                        Rectangle recx = new Rectangle((int)x.X - (int)x.Width / 2 - area.X, (int)x.Y - (int)x.Height / 2 - area.Y, (int)x.Width, (int)x.Height);
-                        if (!Rectangle.Intersect(xij, recx).IsEmpty)
-                            map[i, j] = 1;
-                    }
-
-                    foreach (ObstacleRepresentation x in obstaclesInfo)
-                    {
-                        Rectangle recx = new Rectangle((int)x.X - (int)x.Width / 2 - area.X, (int)x.Y - (int)x.Height / 2 - area.Y, (int)x.Width, (int)x.Height);
-                        if (!Rectangle.Intersect(xij, recx).IsEmpty)
-                            map[i, j] = 3;
-
-
-                    }
-
-                }
-
-        }
-
-        void debug_draw_map()
-        {
-            for (int i = 0; i < M; i++)
-            {
-                string str = "";
-                for (int j = 0; j < N; j++)
-                {
-                    str += map[j, i].ToString();
-
-
-                }
-
-                Debug.WriteLine(str);
-            }
-
-            Debug.WriteLine("______________________________________");
-
-        }
-
-
-        float bfs_heura(float x1, float y1, float x2, float y2, bool iscircle)
-        {
-
-            if (heura_is_init == false)
-            {
-                bfs_heura_init();
-                heura_is_init = true;
-            }
-
-            int i1 = (int)(x1 - area.X) / size_of_box;
-            int j1 = (int)(y1 - area.Y) / size_of_box;
-            int i2 = (int)(x2 - area.X) / size_of_box;
-            int j2 = (int)(y2 - area.Y) / size_of_box;
-
-            Queue<int> q = new Queue<int>();
-
-            int[,] dist = new int[N, M];
-
-            for (int i = 0; i < N; i++)
-                for (int j = 0; j < M; j++)
-                    dist[i, j] = 0;
-
-            q.Enqueue(c2to1(i1, j1));
-            dist[i1, j1] = 1;
-            while (q.Count != 0)
-            {
-                int z = q.Dequeue();
-                int x = f1to2(z);
-                int y = s1to2(z);
-                int d = dist[x, y];
-                for (int i = -1; i <= 1; i++)
-                    for (int j = -1; j <= 1; j++)
-                        if (Math.Abs(i) + Math.Abs(j) == 1)
-                            if (i + x >= 0 && i + x < N && j + y >= 0 && j + y < M)
-                                if (map[i + x, j + y] == 0 || (iscircle == true && map[i + x, j + y] == 1) || (iscircle == false && map[i + x, j + y] == 2))
-                                    if (dist[i + x, j + y] == 0)
-                                    {
-
-                                        if (i + x == i2 && j + y == j2)
-                                            return d;
-
-                                        dist[i + x, j + y] = d + 1;
-                                        q.Enqueue(c2to1(i + x, j + y));
-
-                                    }
-                
-            }
-
-
-        
-            //brak sciezki
-            return max_size * 2;
-        }
 
         private double CP;
         private int NumberOfCollectibles;
@@ -376,26 +226,15 @@ namespace GeometryFriendsAgents
 
         public override void Update(TimeSpan elapsedGameTime)
         {
-            if ((DateTime.Now-lastaction).TotalSeconds >= time_step)
+            _CreateOtherVertices(predictor);
+
+            foreach (var vertex in Graph.Vertices.Where(v => v.Type == VertexType.OnCollectible))
             {
-                _CreateOtherVertices(predictor);
-                MostImportantFunction();
-
-                List<DebugInformation> newDebugInfo = new List<DebugInformation>();
-                newDebugInfo.AddRange(staticDebugInfo);
-
-                Vertex vertex = BestPath[CurrentTargetIndex];
-                newDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.BlanchedAlmond, 0.33f)));
-
-                debugInfo = newDebugInfo.ToArray();
-
-                //   Graph.Fun();
-                // test();
-                // test_fun();
-                lastaction = DateTime.Now;        
-                // MCTS_with_target mcts = new MCTS_with_target(possibleMoves, currentAction, CP, NumberOfCollectibles);            
-                // currentAction = mcts.UCTSearch_with_target(predictor,Graph.Vertices.ElementAt(4),time_step/1000);
+                if (!remaining.Exists(collectible => collectible.X == vertex.X && collectible.Y == vertex.Y))
+                    vertex.Type = VertexType.CaughtCollectible;
             }
+
+            MostImportantFunction();
         }
 
         public void test()
@@ -587,7 +426,7 @@ namespace GeometryFriendsAgents
             // todo: uwzględnić jeszcze odległość do najbliższego niezebranego
             foreach (CollectibleRepresentation item in simulator.CollectiblesUncaught)
             {
-                float d = bfs_heura(simulator.CirclePositionX, simulator.CirclePositionY, item.X, item.Y, true);
+                float d = 0; // bfs_heura(simulator.CirclePositionX, simulator.CirclePositionY, item.X, item.Y, true);
                 if (d < min_d)
                     min_d = d;
             }
@@ -633,7 +472,7 @@ namespace GeometryFriendsAgents
 
         private void _CreateOtherVertices(ActionSimulator simulator)
         {
-            if (simulator == null || _createdOtherVertices) return;
+            if (simulator == null || CreatedOtherVertices) return;
 
             List<DebugInformation> fallingDebugInfo = GraphCreator.AddFallingVertices(simulator);
             List<DebugInformation> jumpingDebugInfo = GraphCreator.AddJumpingVertices(simulator);
@@ -687,7 +526,8 @@ namespace GeometryFriendsAgents
             //newDebugInfo.AddRange(numbers);
             staticDebugInfo = newDebugInfo;
 
-            _createdOtherVertices = true;
+            MCTS_with_target = new MCTS_with_target(possibleMoves, 1.0 / Math.Sqrt(2), Graph, new BFSHeura(area, rectanglePlatformsInfo, circlePlatformsInfo, obstaclesInfo));
+            CreatedOtherVertices = true;
         }
 
         public static void RunSimulator(ActionSimulator simulator, Moves move, float timeMs)
@@ -699,21 +539,60 @@ namespace GeometryFriendsAgents
 
         private void MostImportantFunction()
         {
-            if (!_createdOtherVertices) return;
+            if (!CreatedOtherVertices) return;
 
             if (BestPath == null)
             {
-                MCTS_with_target = new MCTS_with_target(possibleMoves, 1.0 / Math.Sqrt(2), Graph);
                 BestPath = Graph.FindBestPath();
                 CurrentTargetIndex = 1;
             }
 
+            Func<Vertex, float> distanceFromCircle = vertex => MCTS_with_target.dist(circleInfo.X, circleInfo.Y, vertex.X, vertex.Y);
+            var closestVertexOnPath = BestPath.Aggregate((v1, v2) => distanceFromCircle(v1) < distanceFromCircle(v2) ? v1 : v2);
+
+            if (closestVertexOnPath != BestPath[CurrentTargetIndex] && closestVertexOnPath != BestPath[CurrentTargetIndex - 1])
+            {
+                const float MAX_ALLOW_TIME = 3;
+
+                if ((DateTime.Now - LastTimeOnPath).TotalSeconds > MAX_ALLOW_TIME)
+                {
+                    var oldStartVertex = Graph.Vertices.Where(v => v.Type == VertexType.OnCircleStart).First();
+                    oldStartVertex.Type = VertexType.OnCircleStartOld;
+
+                    var newStartVertex = GraphCreator.CreateVertexUnderPosition(circleInfo.X, circleInfo.Y, VertexType.OnCircleStart);
+                    GraphCreator.CreateSameObstacleEdges(newStartVertex.Obstacle ?? obstaclesInfo[0]); // XD
+
+                    this.BestPath = Graph.FindBestPath();
+                    CurrentTargetIndex = 1;
+                    LastTimeOnPath = DateTime.Now;
+
+                    for (int i = 0; i < BestPath.Count - 1; i++)
+                    {
+                        staticDebugInfo.Add(DebugInformationFactory.CreateLineDebugInfo(new PointF(BestPath[i].X, BestPath[i].Y), new PointF(BestPath[i + 1].X, BestPath[i + 1].Y), GeometryFriends.XNAStub.Color.Yellow));
+                    }
+                }
+            }
+
+            else
+                LastTimeOnPath = DateTime.Now;
+
             if (MCTS_with_target.check_intersect(BestPath[CurrentTargetIndex], circleInfo.X, circleInfo.Y, circleInfo.Radius))
             {
                 CurrentTargetIndex++;
+                List<DebugInformation> newDebugInfo = new List<DebugInformation>();
+                newDebugInfo.AddRange(staticDebugInfo);
+
+                Vertex vertex = BestPath[CurrentTargetIndex];
+                newDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.BlanchedAlmond, 0.33f)));
+
+                debugInfo = newDebugInfo.ToArray();
             }
 
-            currentAction = MCTS_with_target.UCTSearch_with_target(predictor, BestPath[CurrentTargetIndex - 1], BestPath[CurrentTargetIndex], time_step, currentAction);
+            if ((DateTime.Now - lastaction).TotalSeconds >= time_step)
+            {
+                currentAction = MCTS_with_target.UCTSearch_with_target(predictor, BestPath[CurrentTargetIndex - 1], BestPath[CurrentTargetIndex], time_step, currentAction);
+                lastaction = DateTime.Now;
+            }
         }
     }
 }

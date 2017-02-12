@@ -18,6 +18,9 @@ namespace GeometryFriendsAgents
         private Random rnd;
         private double CP;
         private Graph Graph;
+        private bool DidCollide;
+        private float CollisionStep;
+        private BFSHeura BFSHeura;
 
         //p0-p1 vs p2-p3
        public static bool get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y,
@@ -79,23 +82,32 @@ namespace GeometryFriendsAgents
             return false;
         }
 
-        public MCTS_with_target(List<Moves> possibleMoves, double CP, Graph Graph)
+        public MCTS_with_target(List<Moves> possibleMoves, double CP, Graph Graph, BFSHeura BFSHeura)
         {
             this.possibleMoves = possibleMoves;
             this.rnd = new Random();
             this.CP = CP;
             this.Graph = Graph;
+            this.DidCollide = false;
+            CollisionStep = 0.1f;
+            this.BFSHeura = BFSHeura;
         }
 
         private MCTSTreeNode Expand_with_target(MCTSTreeNode node, Vertex source, Vertex target)
         {
+            Moves newMove;
             Moves suggestedMove = Graph.Edges[source][target].SuggestedMove;
+            List<Moves> notUsedActions = possibleMoves.Except(node.Children.Select(c => c.Move)).ToList();
+            List<Moves> movesWithoutJump = notUsedActions.Where(move => move != Moves.JUMP).ToList();
 
             if (node.Children.Count == 0)
-                return node.AddNewMove(suggestedMove);
+                newMove = suggestedMove;
 
-            List<Moves> notUsedActions = possibleMoves.Except(node.Children.Select(c => c.Move)).ToList();
-            Moves newMove = notUsedActions[rnd.Next(notUsedActions.Count)];
+            else if (movesWithoutJump.Count > 0)
+                newMove = movesWithoutJump[rnd.Next(movesWithoutJump.Count)];
+
+            else
+                newMove = Moves.JUMP;
 
             return node.AddNewMove(newMove);
         }
@@ -128,12 +140,14 @@ namespace GeometryFriendsAgents
         {
             while (true) // todo: może nie warto schodzić zbyt głęboko
             {
-                if (node.Children.Count < possibleMoves.Count)
+                const float ExpandOtherChance = 0.5f;
+
+                if (node.Children.Count == 0 || rnd.NextDouble() < ExpandOtherChance && node.Children.Count < possibleMoves.Count)
                     return Expand_with_target(node, source, target);
                 else
                 {
                     node = BestChild_with_target(node, CP);
-                    CircleAgent.RunSimulator(simulator, node.Move, move_time * 1000);
+                    RunSimulatorAndCheckCollision(target, simulator, node.Move, move_time * 1000);
                 }
             }
         }
@@ -163,14 +177,11 @@ namespace GeometryFriendsAgents
 
         private double DefaultPolicy_with_target(ActionSimulator simulator, MCTSTreeNode node, Vertex source, Vertex target, float move_time)
         {
+            RunSimulatorAndCheckCollision(target, simulator, node.Move, move_time * 1000);
+
             int MaxCircleSpeed = 200;
             float SECONDS_OF_SIMULATION = dist(target.X, target.Y, simulator.CirclePositionX, simulator.CirclePositionY) / MaxCircleSpeed + 0.5f;
-            float step = 0.1f;
-            float CircleSize = 40;
-            float SuggestedMoveChance = 0.5f;
-
-            CircleAgent.RunSimulator(simulator, node.Move, move_time * 1000);
-
+            float SuggestedMoveChance = 0.0f;
             float movesInMoveTime = SECONDS_OF_SIMULATION / move_time;
 
             for (int i = 0; i < movesInMoveTime; i++)
@@ -180,24 +191,19 @@ namespace GeometryFriendsAgents
                 if (rnd.NextDouble() < SuggestedMoveChance)
                     move = Graph[source][target].SuggestedMove;
 
-                float numberOfSteps = move_time / step;
-
-                for (int j = 0; j < numberOfSteps; j++)
-                {
-                    CircleAgent.RunSimulator(simulator, move, step * 1000);
-
-                    if (check_intersect(target, simulator.CirclePositionX, simulator.CirclePositionY, CircleSize / 2))
-                        return 1;
-                }
+                RunSimulatorAndCheckCollision(target, simulator, move, move_time * 1000);
             }
+
+            if (DidCollide)
+                return 1;
 
             return 0;
 
-            float d = dist(simulator.CirclePositionX, simulator.CirclePositionY, target.X, target.Y);
+            float d = dist(simulator.CirclePositionX, simulator.CirclePositionY, target.X, target.Y);//BFSHeura.bfs_heura(simulator.CirclePositionX, simulator.CirclePositionY, target.X, target.Y, true);
 
             double CONST2 = 1000;
             double g = Math.Max(-d / CONST2 + 1, 0);
-
+            
             return g;
         }
 
@@ -210,8 +216,9 @@ namespace GeometryFriendsAgents
 
             while ((DateTime.Now - start).TotalSeconds < move_time)
             {
-                simulator.SimulatorStep = 0.05f;
-                CircleAgent.RunSimulator(simulator, currentAction, move_time * 1000);
+                DidCollide = false;
+                //simulator.SimulatorStep = 0.01f;
+                RunSimulatorAndCheckCollision(target, simulator, currentAction, move_time * 1000);
 
                 MCTSTreeNode node = TreePolicy_with_target(simulator, root, move_time, source, target);
                 double value = DefaultPolicy_with_target(simulator, node, source, target, move_time);
@@ -226,6 +233,19 @@ namespace GeometryFriendsAgents
             Log.LogInformation("    Best node (" + bestNode.Move + ") simulations: " + bestNode.Simulations + ", value: " + bestNode.Value);
 
             return bestNode.Move;
+        }
+
+        private void RunSimulatorAndCheckCollision(Vertex target, ActionSimulator simulator, Moves move, float timeMs)
+        {
+            float numberOfSteps = timeMs / 1000 / CollisionStep;
+
+            for (int j = 0; j < numberOfSteps; j++)
+            {
+                CircleAgent.RunSimulator(simulator, move, CollisionStep * 1000);
+
+                if (check_intersect(target, simulator.CirclePositionX, simulator.CirclePositionY, simulator.CircleVelocityRadius))
+                    DidCollide = true;
+            }
         }
 
     }
