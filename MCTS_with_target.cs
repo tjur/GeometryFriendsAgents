@@ -163,7 +163,8 @@ namespace GeometryFriendsAgents
 
         private double DefaultPolicy_with_target(ActionSimulator simulator, MCTSTreeNode node, Vertex source, Vertex target, float move_time)
         {
-            float SECONDS_OF_SIMULATION =(float) Math.Sqrt(((target.X-simulator.CirclePositionX)* (target.X - simulator.CirclePositionX)+ (target.Y - simulator.CirclePositionY)* (target.Y - simulator.CirclePositionY)))/200+0.5f;
+            int MaxCircleSpeed = 200;
+            float SECONDS_OF_SIMULATION = dist(target.X, target.Y, simulator.CirclePositionX, simulator.CirclePositionY) / MaxCircleSpeed + 0.5f;
             float step = 0.1f;
             float CircleSize = 40;
             float SuggestedMoveChance = 0.5f;
@@ -177,7 +178,7 @@ namespace GeometryFriendsAgents
                 Moves move = possibleMoves[rnd.Next(possibleMoves.Count)];
 
                 if (rnd.NextDouble() < SuggestedMoveChance)
-                    move = Graph.Edges[source][target].SuggestedMove;
+                    move = Graph[source][target].SuggestedMove;
 
                 float numberOfSteps = move_time / step;
 
@@ -222,7 +223,7 @@ namespace GeometryFriendsAgents
             MCTSTreeNode bestNode = BestChild_with_target(root, 0);
 
             Log.LogInformation("Root simulations: " + root.Simulations + ", value: " + root.Value);
-            Log.LogInformation("Best node (" + bestNode.Move + ") simulations: " + bestNode.Simulations + ", value: " + bestNode.Value);
+            Log.LogInformation("    Best node (" + bestNode.Move + ") simulations: " + bestNode.Simulations + ", value: " + bestNode.Value);
 
             return bestNode.Move;
         }

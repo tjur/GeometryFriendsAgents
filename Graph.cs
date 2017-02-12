@@ -19,6 +19,14 @@ namespace GeometryFriendsAgents
             Edges = new Dictionary<Vertex, Dictionary<Vertex, Edge>>();
         }
 
+        public Dictionary<Vertex, Edge> this[Vertex VertexFrom]
+        {
+            get
+            {
+                return Edges[VertexFrom];
+            }
+        }
+
         public Edge AddEdge(Vertex VertexFrom, Vertex VertexTo)
         {
             if (!Edges.ContainsKey(VertexFrom)) Edges.Add(VertexFrom, new Dictionary<Vertex, Edge>());
