@@ -53,6 +53,8 @@ namespace GeometryFriendsAgents
         private ObstacleRepresentation[] circlePlatformsInfo;
         private CollectibleRepresentation[] collectiblesInfo;
 
+        private ObstacleRepresentation[] borderObstacles; // 4 przeszkody stanowiące obramowanie planszy (nie ma ich w obstaclesInfo)
+
         private int nCollectiblesLeft;
 
         private List<AgentMessage> messages;
@@ -125,12 +127,12 @@ namespace GeometryFriendsAgents
             // dodaję obramowanie planszy jako przeszkody (aby można było ją narysować i postawić na niej wierzchołki)
             const int borderWidth = 40; // szerokość czarnej ramki otaczającej każdą planszę
 
-            var oIList = obstaclesInfo.ToList();
-            oIList.Add(new ObstacleRepresentation(borderWidth / 2, (area.Height + 2 * borderWidth) / 2, borderWidth, area.Height + 2 * borderWidth));
-            oIList.Add(new ObstacleRepresentation(area.Width + borderWidth + borderWidth / 2, (area.Height + 2 * borderWidth) / 2, borderWidth, area.Height + 2 * borderWidth));
-            oIList.Add(new ObstacleRepresentation((area.Width + 2 * borderWidth) / 2, borderWidth / 2, area.Width, borderWidth));
-            oIList.Add(new ObstacleRepresentation((area.Width + 2 * borderWidth) / 2, area.Height + borderWidth + borderWidth / 2, area.Width, borderWidth));
-            var newOIArray = oIList.ToArray();
+            borderObstacles = new ObstacleRepresentation[4];
+            borderObstacles[0] = new ObstacleRepresentation(borderWidth / 2, (area.Height + 2 * borderWidth) / 2, borderWidth, area.Height + 2 * borderWidth);
+            borderObstacles[1] = new ObstacleRepresentation(area.Width + borderWidth + borderWidth / 2, (area.Height + 2 * borderWidth) / 2, borderWidth, area.Height + 2 * borderWidth);
+            borderObstacles[2] = new ObstacleRepresentation((area.Width + 2 * borderWidth) / 2, borderWidth / 2, area.Width, borderWidth);
+            borderObstacles[3] = new ObstacleRepresentation((area.Width + 2 * borderWidth) / 2, area.Height + borderWidth + borderWidth / 2, area.Width, borderWidth);
+            ObstacleRepresentation[] newOIArray = obstaclesInfo.Concat(borderObstacles).ToArray();
 
             GraphCreator = new GraphCreator(nI, rI, cI, newOIArray, rPI, cPI, colI, area);
             Graph = GraphCreator.Graph;
@@ -280,9 +282,6 @@ namespace GeometryFriendsAgents
 
         }
 
-
-
-
         public void test_fun()
         {
 
@@ -310,19 +309,6 @@ namespace GeometryFriendsAgents
 
 
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         //implements abstract circle interface: signals the agent the end of the current level
         public override void EndGame(int collectiblesCaught, int timeElapsed)
@@ -526,7 +512,8 @@ namespace GeometryFriendsAgents
             //newDebugInfo.AddRange(numbers);
             staticDebugInfo = newDebugInfo;
 
-            MCTS_with_target = new MCTS_with_target(possibleMoves, 1.0 / Math.Sqrt(2), Graph, new BFSHeura(area, rectanglePlatformsInfo, circlePlatformsInfo, obstaclesInfo));
+            ObstacleRepresentation[] newOIArray = obstaclesInfo.Concat(borderObstacles).ToArray();
+            MCTS_with_target = new MCTS_with_target(possibleMoves, 1.0 / Math.Sqrt(2), Graph, new BFSHeura(area, rectanglePlatformsInfo, circlePlatformsInfo, newOIArray));
             CreatedOtherVertices = true;
         }
 
