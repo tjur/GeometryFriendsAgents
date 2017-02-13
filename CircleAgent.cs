@@ -68,7 +68,7 @@ namespace GeometryFriendsAgents
         private bool CreatedOtherVertices = false;
         private DateTime LastTimeOnPath;
 
-        float time_step = 0.35f;
+        float time_step = 0.2f;
         DateTime lastaction;
 
         private double CP;
@@ -466,6 +466,14 @@ namespace GeometryFriendsAgents
         {
             if (simulator == null || CreatedOtherVertices) return;
 
+            var circle = ReflectionUtils.GetAssociatedCircleCharacter(simulator);
+
+            if (circle == null) return;
+
+            var body = ReflectionUtils.GetBody(circle);
+
+            if (body == null) return;
+
             List<DebugInformation> fallingDebugInfo = GraphCreator.AddFallingVertices(simulator);
             List<DebugInformation> jumpingDebugInfo = GraphCreator.AddJumpingVertices(simulator);
             List<DebugInformation> verticesDebugInfo = new List<DebugInformation>();
@@ -501,7 +509,7 @@ namespace GeometryFriendsAgents
 
             foreach (var vertex in bestPath)
             {
-            //    bestPathDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.Red));
+                //    bestPathDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.Red));
             }
 
             for (int i = 0; i < bestPath.Count - 1; i++)
@@ -539,6 +547,21 @@ namespace GeometryFriendsAgents
                 BestPath = Graph.FindBestPath();
                 CurrentTargetIndex = 1;
                 LastTimeOnPath = DateTime.Now;
+
+                List<DebugInformation> newDebugInfo = new List<DebugInformation>();
+                newDebugInfo.Add(DebugInformationFactory.CreateClearDebugInfo());
+                newDebugInfo.AddRange(staticDebugInfo);
+
+                Vertex vertex = BestPath[CurrentTargetIndex];
+                newDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.BlanchedAlmond));
+
+                debugInfo = newDebugInfo.ToArray();
+            }
+
+            if (BestPath.Count == 0)
+            {
+                //Log.LogError("NO PATH!");
+                return;
             }
 
             Func<float, float> maxAllowedTime = suggestedTime => suggestedTime * 3.0f + 2;

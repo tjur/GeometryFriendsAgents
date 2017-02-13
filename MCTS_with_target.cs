@@ -21,6 +21,7 @@ namespace GeometryFriendsAgents
         private bool DidCollide;
         private float CollisionStep;
         private BFSHeura BFSHeura;
+        private const float CircleRadius = 40;
 
         //p0-p1 vs p2-p3
        public static bool get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y,
@@ -103,11 +104,8 @@ namespace GeometryFriendsAgents
             if (node.Children.Count == 0)
                 newMove = suggestedMove;
 
-            else if (movesWithoutJump.Count > 0)
-                newMove = movesWithoutJump[rnd.Next(movesWithoutJump.Count)];
-
             else
-                newMove = Moves.JUMP;
+                newMove = movesWithoutJump[rnd.Next(movesWithoutJump.Count)];
 
             return node.AddNewMove(newMove);
         }
@@ -143,9 +141,10 @@ namespace GeometryFriendsAgents
         {
             while (true) // todo: może nie warto schodzić zbyt głęboko
             {
-                const float ExpandOtherChance = 0.2f;
+                Moves suggestedMove = Graph.Edges[source][target].SuggestedMove;
+                const float ExpandOtherChance = 0.1f;
 
-                if (node.Children.Count == 0 || rnd.NextDouble() < ExpandOtherChance && node.Children.Count < possibleMoves.Count)
+                if (node.Children.Count == 0 || rnd.NextDouble() < ExpandOtherChance && (suggestedMove == Moves.JUMP && node.Children.Count < possibleMoves.Count || suggestedMove != Moves.JUMP && node.Children.Count < possibleMoves.Count - 1))
                     return Expand_with_target(node, source, target);
                 else
                 {
@@ -224,7 +223,7 @@ namespace GeometryFriendsAgents
             {
                 CircleAgent.RunSimulator(simulator, move, CollisionStep * 1000);
 
-                if (check_intersect(target, simulator.CirclePositionX, simulator.CirclePositionY, simulator.CircleVelocityRadius))
+                if (check_intersect(target, simulator.CirclePositionX, simulator.CirclePositionY, CircleRadius))
                     DidCollide = true;
             }
         }

@@ -14,6 +14,7 @@ namespace GeometryFriendsAgents
     {
         private const float VertexWidth = 80;
         private const float VertexHeight = 40;
+        private const float CircleRadius = 40;
 
         private CountInformation numbersInfo;
         private RectangleRepresentation rectangleInfo;
@@ -85,11 +86,11 @@ namespace GeometryFriendsAgents
                     {
                         linearVelocity.X *= -1.0f;
                         angularVelocity *= -1.0f;
-                        position = new PointF(vertex.X - vertex.Width / 2 + X_POSITION_OFFSET, vertex.Y + vertex.Height / 2 - simulator.CircleVelocityRadius);
+                        position = new PointF(vertex.X - vertex.Width / 2 + X_POSITION_OFFSET, vertex.Y + vertex.Height / 2 - CircleRadius);
                     }
 
                     else
-                        position = new PointF(vertex.X + vertex.Width / 2 - X_POSITION_OFFSET, vertex.Y + vertex.Height / 2 - simulator.CircleVelocityRadius);
+                        position = new PointF(vertex.X + vertex.Width / 2 - X_POSITION_OFFSET, vertex.Y + vertex.Height / 2 - CircleRadius);
 
                     foreach (bool jump in new []{ true, false })
                     {
@@ -153,11 +154,11 @@ namespace GeometryFriendsAgents
                     {
                         linearVelocity.X *= -1.0f;
                         angularVelocity *= -1.0f;
-                        position = new PointF(vertex.X - vertex.Width / 2 + X_POSITION_OFFSET, vertex.Y + vertex.Height / 2 - simulator.CircleVelocityRadius);
+                        position = new PointF(vertex.X - vertex.Width / 2 + X_POSITION_OFFSET, vertex.Y + vertex.Height / 2 - CircleRadius);
                     }
 
                     else
-                        position = new PointF(vertex.X + vertex.Width / 2 - X_POSITION_OFFSET, vertex.Y + vertex.Height / 2 - simulator.CircleVelocityRadius);
+                        position = new PointF(vertex.X + vertex.Width / 2 - X_POSITION_OFFSET, vertex.Y + vertex.Height / 2 - CircleRadius);
 
                     foreach (bool jump in new[] { true, false })
                     {
@@ -248,7 +249,7 @@ namespace GeometryFriendsAgents
                 simulator.Update(0.01f);
 
             VertexType vertexType = simulator.CircleVelocityX > 0 ? VertexType.FallenFromLeft : VertexType.FallenFromRight;
-            PointF vertexPosition = new PointF(simulator.CirclePositionX, simulator.CirclePositionY + simulator.CircleVelocityRadius - VertexHeight / 2);
+            PointF vertexPosition = new PointF(simulator.CirclePositionX, simulator.CirclePositionY + CircleRadius - VertexHeight / 2);
             return Tuple.Create(new Vertex(vertexPosition.X, vertexPosition.Y, VertexWidth, VertexHeight, vertexType), simulator.SimulationHistoryDebugInformation, collectibleVerticesCaught);
         }
 

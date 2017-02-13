@@ -13,7 +13,7 @@ namespace GeometryFriendsAgents
         private FieldType[,] map;
         private int N, M;
 
-        private int boxSize = 3;
+        private int boxSize = 7;
         const int maxSize = 10000;
 
         private enum FieldType { Free, FreeForCircle, FreeForRectangle, NotFree }
@@ -95,6 +95,11 @@ namespace GeometryFriendsAgents
 
         public float BfsHeura(float x1, float y1, float x2, float y2, bool isCircle)
         {
+            if (x1 >= area.X + area.Width || y1 >= area.Y + area.Height || x2 >= area.X + area.Width || y2 >= area.Y + area.Height || x1 <= area.X || x2 <= area.X || y1 <= area.Y || y2 <= area.Y)
+            {
+                return 2 * maxSize;
+            }
+
             int i1 = (int)(x1) / boxSize;
             int j1 = (int)(y1) / boxSize;
             int i2 = (int)(x2) / boxSize;
