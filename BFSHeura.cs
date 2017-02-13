@@ -18,6 +18,8 @@ namespace GeometryFriendsAgents
 
         private enum FieldType { Free, FreeForCircle, FreeForRectangle, NotFree }
 
+        private int[,,,] Distances;
+
         Rectangle area;
         ObstacleRepresentation[] rectanglePlatformsInfo;
         ObstacleRepresentation[] circlePlatformsInfo;
@@ -31,6 +33,7 @@ namespace GeometryFriendsAgents
             this.obstaclesInfo = obstaclesInfo;
 
             Init();
+            //FloydWarshallInit();
         }
 
         void Init()
@@ -38,9 +41,8 @@ namespace GeometryFriendsAgents
             float Sx = area.Width;
             float Sy = area.Height;
 
-            N = (int)(area.Width - area.X) / boxSize + 1;
-
-            M = (int)(area.Height - area.Y) / boxSize + 1;
+            N = (int)(area.Width + 2 * area.X) / boxSize + 1;
+            M = (int)(area.Height + 2 * area.Y) / boxSize + 1;
 
             map = new FieldType[N, M]; // 0 - empty , 1 - only circle can move , 2 - only rectangle can move, 3 - nobody can move
 
@@ -53,24 +55,24 @@ namespace GeometryFriendsAgents
                 for (int j = 0; j < M; j++)
                 {
 
-                    Rectangle xij = new Rectangle(boxSize * i + area.X, boxSize * j + area.Y, boxSize, boxSize);
+                    Rectangle xij = new Rectangle(boxSize * i, boxSize * j, boxSize, boxSize);
                     foreach (ObstacleRepresentation obst in rectanglePlatformsInfo)
                     {
-                        Rectangle recx = new Rectangle((int)obst.X - (int)obst.Width / 2 - area.X, (int)obst.Y - (int)obst.Height / 2 - area.Y, (int)obst.Width, (int)obst.Height);
+                        Rectangle recx = new Rectangle((int)obst.X - (int)obst.Width / 2, (int)obst.Y - (int)obst.Height / 2, (int)obst.Width, (int)obst.Height);
                         if (!Rectangle.Intersect(xij, recx).IsEmpty)
                             map[i, j] = FieldType.FreeForRectangle;
                     }
 
                     foreach (ObstacleRepresentation obst in circlePlatformsInfo)
                     {
-                        Rectangle recx = new Rectangle((int)obst.X - (int)obst.Width / 2 - area.X, (int)obst.Y - (int)obst.Height / 2 - area.Y, (int)obst.Width, (int)obst.Height);
+                        Rectangle recx = new Rectangle((int)obst.X - (int)obst.Width / 2, (int)obst.Y - (int)obst.Height / 2, (int)obst.Width, (int)obst.Height);
                         if (!Rectangle.Intersect(xij, recx).IsEmpty)
                             map[i, j] = FieldType.FreeForCircle;
                     }
 
                     foreach (ObstacleRepresentation obst in obstaclesInfo)
                     {
-                        Rectangle recx = new Rectangle((int)obst.X - (int)obst.Width / 2 - area.X, (int)obst.Y - (int)obst.Height / 2 - area.Y, (int)obst.Width, (int)obst.Height);
+                        Rectangle recx = new Rectangle((int)obst.X - (int)obst.Width / 2, (int)obst.Y - (int)obst.Height / 2, (int)obst.Width, (int)obst.Height);
                         if (!Rectangle.Intersect(xij, recx).IsEmpty)
                             map[i, j] = FieldType.NotFree;
                     }
@@ -91,17 +93,12 @@ namespace GeometryFriendsAgents
             Debug.WriteLine("______________________________________");
         }
 
-        public float bfsHeura(float x1, float y1, float x2, float y2, bool isCircle)
+        public float BfsHeura(float x1, float y1, float x2, float y2, bool isCircle)
         {
-            if (x1 >= area.X + area.Width || y1 >= area.Y + area.Height || x2 >= area.X + area.Width || y2 >= area.Y + area.Height || x1 <= area.X || x2 <= area.X || y1 <= area.Y || y2 <= area.Y)
-            {
-                return 2 * maxSize;
-            }
-
-            int i1 = (int)(x1 - area.X) / boxSize;
-            int j1 = (int)(y1 - area.Y) / boxSize;
-            int i2 = (int)(x2 - area.X) / boxSize;
-            int j2 = (int)(y2 - area.Y) / boxSize;
+            int i1 = (int)(x1) / boxSize;
+            int j1 = (int)(y1) / boxSize;
+            int i2 = (int)(x2) / boxSize;
+            int j2 = (int)(y2) / boxSize;
 
             Queue<Tuple<int, int>> q = new Queue<Tuple<int, int>>();
 
@@ -179,6 +176,93 @@ namespace GeometryFriendsAgents
             //brak sciezki
             return max_size * 2;*/
 
+        }
+
+        public void FloydWarshallInit()
+        {
+            bool isCircle = true;
+
+            Distances = new int[N, M, N, M];
+            Tuple<int, int>[,,,] pred = new Tuple<int, int>[N, M, N, M];
+
+            for (int x1 = 0; x1 < N; x1++)
+            {
+                for (int y1 = 0; y1 < M; y1++)
+                {
+                    for (int x2 = 0; x2 < N; x2++)
+                    {
+                        for (int y2 = 0; y2 < M; y2++)
+                        {
+                            Distances[x1, y1, x2, y2] = 2 * maxSize;
+                            pred[x1, y1, x2, y2] = null;
+                        }
+                    }
+
+                    Distances[x1, y1, x1, y1] = 0;
+                }
+            }
+
+            for (int x = 0; x < N; x++)
+            {
+                for (int y = 0; y < M; y++)
+                {
+                    if (map[x, y] == FieldType.FreeForRectangle || map[x, y] == FieldType.NotFree) continue;
+
+                    List<Tuple<int, int>> neighbours = new List<Tuple<int, int>>();
+
+                    if (x > 0)
+                        neighbours.Add(new Tuple<int, int>(x - 1, y));
+                    if (x < N - 1)
+                        neighbours.Add(new Tuple<int, int>(x + 1, y));
+                    if (y > 0)
+                        neighbours.Add(new Tuple<int, int>(x, y - 1));
+                    if (y < M - 1)
+                        neighbours.Add(new Tuple<int, int>(x, y + 1));
+
+                    neighbours = neighbours
+                                    .Where(field =>
+                                           (map[field.Item1, field.Item2] == FieldType.Free ||
+                                           (map[field.Item1, field.Item2] == FieldType.FreeForCircle && isCircle) ||
+                                           (map[field.Item1, field.Item2] == FieldType.FreeForRectangle && !isCircle))).ToList();
+
+                    foreach (var neighbour in neighbours)
+                    {
+                        Distances[x, y, neighbour.Item1, neighbour.Item2] = 1;
+                        pred[x, y, neighbour.Item1, neighbour.Item2] = new Tuple<int, int>(x, y);
+                    }
+                }
+            }
+
+            for (int x1 = 0; x1 < N; x1++)
+                for (int y1 = 0; y1 < M; y1++)
+                    for (int x2 = 0; x2 < N; x2++)
+                        for (int y2 = 0; y2 < M; y2++)
+                            for (int x3 = 0; x3 < N; x3++)
+                                for (int y3 = 0; y3 < M; y3++)
+                                {
+                                    int d = Distances[x2, y2, x1, y1] + Distances[x1, y1, x3, y3];
+
+                                    if (Distances[x2, y2, x3, y3] > d)
+                                    {
+                                        Distances[x2, y2, x3, y3] = d;
+                                        pred[x2, y2, x3, y3] = pred[x1, y1, x3, y3];
+                                    }
+                                }
+        }
+
+        public int GetDistance(float x1, float y1, float x2, float y2)
+        {
+            if (x1 >= area.X + area.Width || y1 >= area.Y + area.Height || x2 >= area.X + area.Width || y2 >= area.Y + area.Height || x1 <= area.X || x2 <= area.X || y1 <= area.Y || y2 <= area.Y)
+            {
+                return 2 * maxSize;
+            }
+
+            int i1 = (int)(x1 - area.X) / boxSize;
+            int j1 = (int)(y1 - area.Y) / boxSize;
+            int i2 = (int)(x2 - area.X) / boxSize;
+            int j2 = (int)(y2 - area.Y) / boxSize;
+
+            return Distances[i1, j1, i2, j2];
         }
     }
 }

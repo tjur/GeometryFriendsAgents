@@ -117,7 +117,7 @@ namespace GeometryFriendsAgents
             node.Backpropagation(value);
         }
 
-        private MCTSTreeNode BestChild_with_target(MCTSTreeNode node, double c)
+        private MCTSTreeNode BestChild_with_target(MCTSTreeNode node, double c, Moves suggestedMove)
         {
             double maxValue = -1;
             MCTSTreeNode bestNode = null;
@@ -125,6 +125,9 @@ namespace GeometryFriendsAgents
             foreach (MCTSTreeNode child in node.Children)
             {
                 double value = child.Value / child.Simulations + c * Math.Sqrt(2 * Math.Log(node.Simulations) / child.Simulations);
+
+                if (child.Move == suggestedMove)
+                    value += 0.5f;
 
                 if (value > maxValue)
                 {
@@ -140,44 +143,24 @@ namespace GeometryFriendsAgents
         {
             while (true) // todo: może nie warto schodzić zbyt głęboko
             {
-                const float ExpandOtherChance = 0.5f;
+                const float ExpandOtherChance = 0.2f;
 
                 if (node.Children.Count == 0 || rnd.NextDouble() < ExpandOtherChance && node.Children.Count < possibleMoves.Count)
                     return Expand_with_target(node, source, target);
                 else
                 {
-                    node = BestChild_with_target(node, CP);
+                    node = BestChild_with_target(node, CP, Graph[source][target].SuggestedMove);
                     RunSimulatorAndCheckCollision(target, simulator, node.Move, move_time * 1000);
                 }
             }
         }
 
-
-
-
-        private MCTSTreeNode BestChild_with_target(MCTSTreeNode node, double c, Vertex target)
-        {
-            double maxValue = -1;
-            MCTSTreeNode bestNode = null;
-
-            foreach (MCTSTreeNode child in node.Children)
-            {
-                double value = child.Value / child.Simulations + c * Math.Sqrt(2 * Math.Log(node.Simulations) / child.Simulations);
-
-                if (value > maxValue)
-                {
-                    maxValue = value;
-                    bestNode = child;
-                }
-            }
-
-            return bestNode;
-        }
-
-
         private double DefaultPolicy_with_target(ActionSimulator simulator, MCTSTreeNode node, Vertex source, Vertex target, float move_time)
         {
             RunSimulatorAndCheckCollision(target, simulator, node.Move, move_time * 1000);
+
+            if (DidCollide)
+                return 1;
 
             int MaxCircleSpeed = 200;
             float SECONDS_OF_SIMULATION = dist(target.X, target.Y, simulator.CirclePositionX, simulator.CirclePositionY) / MaxCircleSpeed + 0.5f;
@@ -197,9 +180,7 @@ namespace GeometryFriendsAgents
             if (DidCollide)
                 return 1;
 
-            return 0;
-
-            float d = dist(simulator.CirclePositionX, simulator.CirclePositionY, target.X, target.Y);//BFSHeura.bfs_heura(simulator.CirclePositionX, simulator.CirclePositionY, target.X, target.Y, true);
+            float d = dist(simulator.CirclePositionX, simulator.CirclePositionY, target.X, target.Y);//BFSHeura.BfsHeura(simulator.CirclePositionX, simulator.CirclePositionY, target.X, target.Y, true);
 
             double CONST2 = 1000;
             double g = Math.Max(-d / CONST2 + 1, 0);
@@ -217,7 +198,7 @@ namespace GeometryFriendsAgents
             while ((DateTime.Now - start).TotalSeconds < move_time)
             {
                 DidCollide = false;
-                //simulator.SimulatorStep = 0.01f;
+                simulator.SimulatorStep = 0.06f;
                 RunSimulatorAndCheckCollision(target, simulator, currentAction, move_time * 1000);
 
                 MCTSTreeNode node = TreePolicy_with_target(simulator, root, move_time, source, target);
@@ -227,7 +208,7 @@ namespace GeometryFriendsAgents
                 simulator.ResetSimulator();
             }
 
-            MCTSTreeNode bestNode = BestChild_with_target(root, 0);
+            MCTSTreeNode bestNode = BestChild_with_target(root, 0, Moves.MORPH_UP);
 
             Log.LogInformation("Root simulations: " + root.Simulations + ", value: " + root.Value);
             Log.LogInformation("    Best node (" + bestNode.Move + ") simulations: " + bestNode.Simulations + ", value: " + bestNode.Value);

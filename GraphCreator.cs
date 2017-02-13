@@ -94,6 +94,7 @@ namespace GeometryFriendsAgents
                     foreach (bool jump in new []{ true, false })
                     {
                         var tuple = _CreateFallenVertex(simulator, position, linearVelocity, angularVelocity, jump);
+
                         var fallenVertex = tuple.Item1;
 
                         var obstacleUnder = GetClosestObstacleUnder(fallenVertex.X, fallenVertex.Y);

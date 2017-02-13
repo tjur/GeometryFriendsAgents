@@ -68,7 +68,7 @@ namespace GeometryFriendsAgents
         private bool CreatedOtherVertices = false;
         private DateTime LastTimeOnPath;
 
-        float time_step = 0.5f;
+        float time_step = 0.35f;
         DateTime lastaction;
 
         private double CP;
@@ -93,7 +93,7 @@ namespace GeometryFriendsAgents
             possibleMoves.Add(Moves.ROLL_RIGHT);
             possibleMoves.Add(Moves.JUMP);
 
-            // possibleMoves.Add(Moves.NO_ACTION);
+            //possibleMoves.Add(Moves.NO_ACTION);
 
             //history keeping
             uncaughtCollectibles = new List<CollectibleRepresentation>();
@@ -230,10 +230,16 @@ namespace GeometryFriendsAgents
         {
             _CreateOtherVertices(predictor);
 
-            foreach (var vertex in Graph.Vertices.Where(v => v.Type == VertexType.OnCollectible))
+            lock (remaining)
             {
-                if (!remaining.Exists(collectible => collectible.X == vertex.X && collectible.Y == vertex.Y))
-                    vertex.Type = VertexType.CaughtCollectible;
+                if (remaining.Count > 0)
+                {
+                    foreach (var vertex in Graph.Vertices.Where(v => v.Type == VertexType.OnCollectible))
+                    {
+                        if (!remaining.Exists(collectible => collectible.X == vertex.X && collectible.Y == vertex.Y))
+                            vertex.Type = VertexType.CaughtCollectible;
+                    }
+                }
             }
 
             MostImportantFunction();
@@ -532,45 +538,50 @@ namespace GeometryFriendsAgents
             {
                 BestPath = Graph.FindBestPath();
                 CurrentTargetIndex = 1;
-            }
-
-            Func<Vertex, float> distanceFromCircle = vertex => MCTS_with_target.dist(circleInfo.X, circleInfo.Y, vertex.X, vertex.Y);
-            var closestVertexOnPath = BestPath.Aggregate((v1, v2) => distanceFromCircle(v1) < distanceFromCircle(v2) ? v1 : v2);
-
-            if (closestVertexOnPath != BestPath[CurrentTargetIndex] && closestVertexOnPath != BestPath[CurrentTargetIndex - 1])
-            {
-                const float MAX_ALLOW_TIME = 3;
-
-                if ((DateTime.Now - LastTimeOnPath).TotalSeconds > MAX_ALLOW_TIME)
-                {
-                    var oldStartVertex = Graph.Vertices.Where(v => v.Type == VertexType.OnCircleStart).First();
-                    oldStartVertex.Type = VertexType.OnCircleStartOld;
-
-                    var newStartVertex = GraphCreator.CreateVertexUnderPosition(circleInfo.X, circleInfo.Y, VertexType.OnCircleStart);
-                    GraphCreator.CreateSameObstacleEdges(newStartVertex.Obstacle ?? obstaclesInfo[0]); // XD
-
-                    this.BestPath = Graph.FindBestPath();
-                    CurrentTargetIndex = 1;
-                    LastTimeOnPath = DateTime.Now;
-
-                    for (int i = 0; i < BestPath.Count - 1; i++)
-                    {
-                        staticDebugInfo.Add(DebugInformationFactory.CreateLineDebugInfo(new PointF(BestPath[i].X, BestPath[i].Y), new PointF(BestPath[i + 1].X, BestPath[i + 1].Y), GeometryFriends.XNAStub.Color.Yellow));
-                    }
-                }
-            }
-
-            else
                 LastTimeOnPath = DateTime.Now;
+            }
+
+            Func<float, float> maxAllowedTime = suggestedTime => suggestedTime * 3.0f + 2;
+            var sourceTargetEdge = Graph[BestPath[CurrentTargetIndex - 1]][BestPath[CurrentTargetIndex]];
+
+            if ((DateTime.Now - LastTimeOnPath).TotalSeconds > maxAllowedTime(sourceTargetEdge.SuggestedTime))
+            {
+                var oldStartVertex = Graph.Vertices.Where(v => v.Type == VertexType.OnCircleStart).First();
+                oldStartVertex.Type = VertexType.OnCircleStartOld;
+
+                var newStartVertex = GraphCreator.CreateVertexUnderPosition(circleInfo.X, circleInfo.Y, VertexType.OnCircleStart);
+                GraphCreator.CreateSameObstacleEdges(newStartVertex.Obstacle ?? obstaclesInfo[0]); // XD
+
+                this.BestPath = Graph.FindBestPath();
+                CurrentTargetIndex = 1;
+                LastTimeOnPath = DateTime.Now;
+
+                staticDebugInfo.Clear();
+                for (int i = 0; i < BestPath.Count - 1; i++)
+                {
+                    staticDebugInfo.Add(DebugInformationFactory.CreateLineDebugInfo(new PointF(BestPath[i].X, BestPath[i].Y), new PointF(BestPath[i + 1].X, BestPath[i + 1].Y), GeometryFriends.XNAStub.Color.Yellow));
+                }
+
+                List<DebugInformation> newDebugInfo = new List<DebugInformation>();
+                newDebugInfo.Add(DebugInformationFactory.CreateClearDebugInfo());
+                newDebugInfo.AddRange(staticDebugInfo);
+
+                Vertex vertex = BestPath[CurrentTargetIndex];
+                newDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.BlanchedAlmond));
+
+                debugInfo = newDebugInfo.ToArray();
+            }
 
             if (MCTS_with_target.check_intersect(BestPath[CurrentTargetIndex], circleInfo.X, circleInfo.Y, circleInfo.Radius))
             {
                 CurrentTargetIndex++;
+                LastTimeOnPath = DateTime.Now;
                 List<DebugInformation> newDebugInfo = new List<DebugInformation>();
+                newDebugInfo.Add(DebugInformationFactory.CreateClearDebugInfo());
                 newDebugInfo.AddRange(staticDebugInfo);
 
                 Vertex vertex = BestPath[CurrentTargetIndex];
-                newDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.BlanchedAlmond, 0.33f)));
+                newDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.BlanchedAlmond));
 
                 debugInfo = newDebugInfo.ToArray();
             }
