@@ -471,8 +471,9 @@ namespace GeometryFriendsAgents
             if (circle == null) return;
 
             var body = ReflectionUtils.GetBody(circle);
+            var geom = ReflectionUtils.GetGeom(circle);
 
-            if (body == null) return;
+            if (body == null || geom == null) return;
 
             List<DebugInformation> fallingDebugInfo = GraphCreator.AddFallingVertices(simulator);
             List<DebugInformation> jumpingDebugInfo = GraphCreator.AddJumpingVertices(simulator);
@@ -525,6 +526,7 @@ namespace GeometryFriendsAgents
             newDebugInfo.AddRange(bestPathDebugInfo);
             //newDebugInfo.AddRange(numbers);
             staticDebugInfo = newDebugInfo;
+            //debugInfo = staticDebugInfo.ToArray();
 
             ObstacleRepresentation[] newOIArray = obstaclesInfo.Concat(borderObstacles).ToArray();
             MCTS_with_target = new MCTS_with_target(possibleMoves, 1.0 / Math.Sqrt(2), Graph, new BFSHeura(area, rectanglePlatformsInfo, circlePlatformsInfo, newOIArray));
@@ -542,9 +544,13 @@ namespace GeometryFriendsAgents
         {
             if (!CreatedOtherVertices) return;
 
-            if (BestPath == null)
+            if (BestPath == null || BestPath.Count == 0)
             {
                 BestPath = Graph.FindBestPath();
+
+                if (BestPath.Count == 0)
+                    return;
+
                 CurrentTargetIndex = 1;
                 LastTimeOnPath = DateTime.Now;
 
@@ -556,12 +562,6 @@ namespace GeometryFriendsAgents
                 newDebugInfo.Add(DebugInformationFactory.CreateRectangleDebugInfo(new PointF(vertex.X - vertex.Width / 2, vertex.Y - vertex.Height / 2), new Size((int)vertex.Width, (int)vertex.Height), GeometryFriends.XNAStub.Color.BlanchedAlmond));
 
                 debugInfo = newDebugInfo.ToArray();
-            }
-
-            if (BestPath.Count == 0)
-            {
-                //Log.LogError("NO PATH!");
-                return;
             }
 
             Func<float, float> maxAllowedTime = suggestedTime => suggestedTime * 3.0f + 2;

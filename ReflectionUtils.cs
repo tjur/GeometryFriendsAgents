@@ -13,6 +13,7 @@ namespace GeometryFriendsAgents
     {
         private static BindingFlags _bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
         private static FieldInfo _circleField;
+        private static FieldInfo _geomField;
         private static FieldInfo _bodyField;
         private static FieldInfo _bodyRotationField;
         private static FieldInfo _bodyAngularVelocityField;
@@ -34,6 +35,12 @@ namespace GeometryFriendsAgents
         {
             if (_bodyField == null) _SetBodyFields(associatedCircleCharacter);
             return _bodyField.GetValue(associatedCircleCharacter);
+        }
+
+        public static object GetGeom(object associatedCircleCharacter)
+        {
+            if (_geomField == null) _geomField = associatedCircleCharacter.GetType().GetField("geom", _bindingFlags);
+            return _geomField.GetValue(associatedCircleCharacter);
         }
 
         public static PointF GetBodyLinearVelocity(object body)

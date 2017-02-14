@@ -124,8 +124,12 @@ namespace GeometryFriendsAgents
             {
                 double value = child.Value / child.Simulations + c * Math.Sqrt(2 * Math.Log(node.Simulations) / child.Simulations);
 
-                if (child.Move == suggestedMove)
-                    value += 0.5f;
+                if (child.Move == suggestedMove) {
+                    if (child.Move == Moves.JUMP)
+                        value += 0.2f;
+                    else
+                        value += 0.5f;
+                }
 
                 if (value > maxValue)
                 {
@@ -142,7 +146,7 @@ namespace GeometryFriendsAgents
             while (true) // todo: może nie warto schodzić zbyt głęboko
             {
                 Moves suggestedMove = Graph.Edges[source][target].SuggestedMove;
-                const float ExpandOtherChance = 0.1f;
+                const float ExpandOtherChance = 0.5f;
 
                 if (node.Children.Count == 0 || rnd.NextDouble() < ExpandOtherChance && (suggestedMove == Moves.JUMP && node.Children.Count < possibleMoves.Count || suggestedMove != Moves.JUMP && node.Children.Count < possibleMoves.Count - 1))
                     return Expand_with_target(node, source, target);
@@ -197,7 +201,7 @@ namespace GeometryFriendsAgents
             while ((DateTime.Now - start).TotalSeconds < move_time)
             {
                 DidCollide = false;
-                simulator.SimulatorStep = 0.06f;
+                simulator.SimulatorStep = 0.05f;
                 RunSimulatorAndCheckCollision(target, simulator, currentAction, move_time * 1000);
 
                 MCTSTreeNode node = TreePolicy_with_target(simulator, root, move_time, source, target);
