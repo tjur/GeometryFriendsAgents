@@ -486,7 +486,7 @@ namespace GeometryFriendsAgents
             {
                 const float alpha = 0.33f;
                 GeometryFriends.XNAStub.Color color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.Orange, alpha);
-                if (vertex.Type == VertexType.FallenFromLeft || vertex.Type == VertexType.FallenFromRight) color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.CornflowerBlue, alpha);
+                if (vertex.Type == VertexType.FallenFromLeft || vertex.Type == VertexType.FallenFromRight) color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.DarkOliveGreen, alpha);
                 if (vertex.Type == VertexType.Jumping) color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.Brown, alpha);
                 if (vertex.Type == VertexType.Rolling) color = new GeometryFriends.XNAStub.Color(GeometryFriends.XNAStub.Color.BlanchedAlmond, alpha);
 
@@ -525,6 +525,7 @@ namespace GeometryFriendsAgents
             newDebugInfo.AddRange(bestPathDebugInfo);
             //newDebugInfo.AddRange(numbers);
             staticDebugInfo = newDebugInfo;
+            debugInfo = staticDebugInfo.ToArray();
 
             ObstacleRepresentation[] newOIArray = obstaclesInfo.Concat(borderObstacles).ToArray();
             MCTS_with_target = new MCTS_with_target(possibleMoves, 1.0 / Math.Sqrt(2), Graph, new BFSHeura(area, rectanglePlatformsInfo, circlePlatformsInfo, newOIArray));

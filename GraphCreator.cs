@@ -12,9 +12,15 @@ namespace GeometryFriendsAgents
 {
     class GraphCreator
     {
-        private const float VertexWidth = 80;
+        private const float VertexWidth = 40;
         private const float VertexHeight = 40;
         private const float CircleRadius = 40;
+
+        const float MAX_VELOCITY = 200;
+        const float MAX_ANGULAR_VELOCITY = 4;
+        const float VELOCITIES = 3;
+        const float X_POSITION_OFFSET = 10;
+        const float IS_CLOSE_ENOUGH = 40;
 
         private CountInformation numbersInfo;
         private RectangleRepresentation rectangleInfo;
@@ -61,9 +67,6 @@ namespace GeometryFriendsAgents
 
         public List<DebugInformation> AddFallingVertices(ActionSimulator simulator)
         {
-            const float MAX_VELOCITY = 200;
-            const float MAX_ANGULAR_VELOCITY = 4;
-            const float VELOCITIES = 3;
             const float VELOCITY_STEP = MAX_VELOCITY / VELOCITIES;
             const float ANGULAR_VELOCITY_STEP = MAX_ANGULAR_VELOCITY / VELOCITIES;
 
@@ -80,7 +83,6 @@ namespace GeometryFriendsAgents
                     float angularVelocity = i * ANGULAR_VELOCITY_STEP;
 
                     PointF position;
-                    const float X_POSITION_OFFSET = 10;
 
                     if (vertex.Type == VertexType.OnObstacleLeft)
                     {
@@ -129,9 +131,6 @@ namespace GeometryFriendsAgents
 
         public List<DebugInformation> AddJumpingVertices(ActionSimulator simulator)
         {
-            const float MAX_VELOCITY = 200;
-            const float MAX_ANGULAR_VELOCITY = 4;
-            const float VELOCITIES = 3;
             const float VELOCITY_STEP = MAX_VELOCITY / VELOCITIES;
             const float ANGULAR_VELOCITY_STEP = MAX_ANGULAR_VELOCITY / VELOCITIES;
 
@@ -148,7 +147,6 @@ namespace GeometryFriendsAgents
                     float angularVelocity = i * ANGULAR_VELOCITY_STEP;
 
                     PointF position;
-                    const float X_POSITION_OFFSET = 10;
 
                     if (vertex.Type == VertexType.FallenFromLeft)
                     {
@@ -175,15 +173,21 @@ namespace GeometryFriendsAgents
                         if (!vertex.Obstacle.Equals(obstacleUnder) &&
                             obstacleUnder.Y - obstacleUnder.Height / 2 - (jumpingVertex.Y + jumpingVertex.Height / 2) <= IS_OKAY)
                         {
-                            var closestOnObstacle = Graph.GetAllVerticesOnObstacle(obstacleUnder)
-                                                         .Aggregate((minVertex, v) =>
-                                                            Math.Abs(jumpingVertex.X - minVertex.X) < Math.Abs(jumpingVertex.X - v.X) ?
-                                                                minVertex : v
-                                                         );
 
-                            const float IS_CLOSE_ENOUGH = 100;
-                            if (Math.Abs(jumpingVertex.X - closestOnObstacle.X) <= IS_CLOSE_ENOUGH)
-                                jumpingVertex = closestOnObstacle;
+                            if (Graph.GetAllVerticesOnObstacle(obstacleUnder).Count > 0)
+                            {
+                                var closestOnObstacle = Graph.GetAllVerticesOnObstacle(obstacleUnder)
+                                                             .Aggregate((minVertex, v) =>
+                                                                Math.Abs(jumpingVertex.X - minVertex.X) < Math.Abs(jumpingVertex.X - v.X) ?
+                                                                    minVertex : v
+                                                             );
+                                if (Math.Abs(jumpingVertex.X - closestOnObstacle.X) <= IS_CLOSE_ENOUGH)
+                                    jumpingVertex = closestOnObstacle;
+
+                                else
+                                    jumpingVertices.Add(jumpingVertex);
+                            }
+
                             else
                                 jumpingVertices.Add(jumpingVertex);
 
@@ -429,7 +433,7 @@ namespace GeometryFriendsAgents
 
                 if (!obstacleBetween)
                 {
-                    float suggestedTime = (vertexRight.X - vertexLeft.X) / 200.0f + 1.0f;
+                    float suggestedTime = (vertexRight.X - vertexLeft.X) / 200.0f;
 
                     Graph.AddEdge(vertexLeft, vertexRight);
                     Edge edge = Graph.Edges[vertexLeft][vertexRight];

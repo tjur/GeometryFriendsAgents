@@ -125,7 +125,12 @@ namespace GeometryFriendsAgents
                 double value = child.Value / child.Simulations + c * Math.Sqrt(2 * Math.Log(node.Simulations) / child.Simulations);
 
                 if (child.Move == suggestedMove)
-                    value += 0.5f;
+                {
+                    if (suggestedMove == Moves.JUMP)
+                        value += 0.2f;
+                    else
+                        value += 0.5f;
+                }
 
                 if (value > maxValue)
                 {
